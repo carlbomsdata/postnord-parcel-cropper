@@ -1,38 +1,50 @@
-# Fraktsedelsklippare
+# postnord-parcel-cropper
 
-En statisk GitHub Pages-app som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **102 × 192 mm**.
+En statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **102 × 192 mm**, redo för Zebra eller annan etikettskrivare.
 
-- All behandling sker lokalt i webbläsaren.
-- PDF-filen laddas inte upp till någon server.
-- Text och streckkoder behålls som PDF-innehåll via `pdf-lib`.
-- Förhandsvisning och manuell beskärning görs med PDF.js.
-- Ett förinställt beskärningsområde ligger innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
+**Live:** https://carlboms-data-ab.github.io/postnord-parcel-cropper/
 
-## Publicera med GitHub Pages
+## Funktioner
 
-1. Skapa ett nytt offentligt repository på GitHub, till exempel `fraktsedelsklippare`.
-2. Ladda upp alla filer i denna mapp till repositoryts rot.
-3. Öppna **Settings → Pages**.
-4. Under **Build and deployment**, välj **Deploy from a branch**.
-5. Välj `main` och `/ (root)`, och klicka **Save**.
-6. Efter någon minut finns appen på:
-
-   `https://DITT-ANVÄNDARNAMN.github.io/fraktsedelsklippare/`
+- All behandling sker lokalt i webbläsaren – PDF:en laddas aldrig upp till någon server.
+- Text och streckkoder behålls som vektor-PDF via `pdf-lib` (görs inte om till en skärmbild).
+- Förhandsvisning och manuell beskärning med PDF.js – dra rutan, dra i handtagen eller finjustera med piltangenterna.
+- Preset som lägger beskärningsrutan innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
+- Justerbar utdatastorlek, rotering 180° och bibehållna proportioner (centrerad utan förvrängning).
 
 ## Användning
 
-1. Välj PDF-filen från Tradera.
+1. Öppna [appen](https://carlboms-data-ab.github.io/postnord-parcel-cropper/) och välj eller släpp PDF-filen från Tradera. Endast första sidan behandlas.
 2. Klicka på **Tradera/PostNord-preset**.
-3. Kontrollera att den blå rutan ligger innanför de prickade klippstrecken.
-4. Justera vid behov genom att dra rutan eller handtagen.
-5. Skapa och hämta PDF-filen.
-6. Skriv ut i 100 % / faktisk storlek på 102 × 192 mm.
+3. Kontrollera att den blå rutan ligger innanför de prickade klippstrecken. Justera vid behov.
+4. Klicka **Skapa PDF** och hämta filen.
+5. Skriv ut i **100 % / faktisk storlek** på **102 × 192 mm** med ”Anpassa till sida” avstängt.
+
+## Köra lokalt
+
+Servera mappen med valfri statisk server, t.ex.:
+
+```bash
+python3 -m http.server 8000
+```
+
+Öppna sedan `http://localhost:8000/`. (Ett `file://`-upplägg kan blockeras av webbläsarens säkerhetsregler för webbläsararbetare.)
+
+## Publicera med GitHub Pages
+
+Redan aktiverat för detta repo via **Settings → Pages → Deploy from a branch** (`main` / `/root`). För en egen fork:
+
+1. Öppna **Settings → Pages**.
+2. Under **Build and deployment**, välj **Deploy from a branch**.
+3. Välj `main` och `/ (root)`, och klicka **Save**.
 
 ## Externa bibliotek
 
-Appen laddar följande bibliotek från CDN:
+Laddas från CDN och körs i webbläsaren – PDF:en skickas aldrig till dessa tjänster:
 
 - PDF.js 3.11.174
 - pdf-lib 1.17.1
 
-PDF-filen skickas inte till dessa tjänster. Biblioteken körs i webbläsaren och behandlar filen lokalt.
+## Licens
+
+GPL-3.0 – se [LICENSE](LICENSE).
