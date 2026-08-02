@@ -209,8 +209,10 @@
       const rotation = totalRotation();
       const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
 
+      // Skala så att hela sidan ryms inom både bredd och höjd – ingen inre scroll.
       const availableWidth = Math.max(280, Math.min(900, el.preview.clientWidth - 30));
-      const cssScale = availableWidth / scaleViewport.width;
+      const availableHeight = Math.max(320, window.innerHeight - 300);
+      const cssScale = Math.min(availableWidth / scaleViewport.width, availableHeight / scaleViewport.height);
       const cssViewport = state.pdfPage.getViewport({ scale: cssScale, rotation });
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       const renderViewport = state.pdfPage.getViewport({ scale: cssScale * pixelRatio, rotation });

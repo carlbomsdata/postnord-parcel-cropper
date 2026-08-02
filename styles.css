@@ -117,8 +117,9 @@ button.icon { min-width: 44px; font-size: 1.15rem; line-height: 1; }
 .primary:hover { border-color: var(--accent); opacity: 0.9; }
 
 .viewport {
-  overflow: auto;
-  max-height: 74vh;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -176,7 +177,7 @@ button.icon { min-width: 44px; font-size: 1.15rem; line-height: 1; }
 
 @media (max-width: 600px) {
   main { padding: 28px 16px 48px; }
-  .viewport { padding: 8px; max-height: none; }
+  .viewport { padding: 8px; }
   .primary { width: 100%; }
 }
 
