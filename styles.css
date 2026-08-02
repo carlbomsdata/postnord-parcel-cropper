@@ -94,7 +94,10 @@ h1 {
 }
 .drop:hover, .drop.drag { border-color: var(--fg); color: var(--fg); }
 
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.toolbar .push-right { margin-left: auto; }
+
+#panelEdit { display: flex; flex-direction: column; gap: 12px; }
 
 button {
   font: inherit;
@@ -149,9 +152,6 @@ button.icon { min-width: 44px; font-size: 1.15rem; line-height: 1; }
   outline: none;
 }
 .selection:focus { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
-
-#preview:not(.crop-active) .selection,
-#preview:not(.crop-active) .shade { display: none; }
 
 .handle {
   position: absolute;

@@ -14,9 +14,8 @@
 
     <ol class="steps">
       <li data-step="1">Ladda upp</li>
-      <li data-step="2">Rotera</li>
-      <li data-step="3">Markera</li>
-      <li data-step="4">Ladda ner</li>
+      <li data-step="2">Rotera &amp; markera</li>
+      <li data-step="3">Ladda ner</li>
     </ol>
 
     <section id="panelUpload" class="panel">
@@ -26,37 +25,34 @@
       </label>
     </section>
 
-    <div id="preview" class="viewport" hidden>
-      <div id="pageStage" class="stage">
-        <canvas id="pdfCanvas" aria-label="Förhandsvisning"></canvas>
-        <div id="selection" class="selection" tabindex="0" aria-label="Beskärningsområde">
-          <button class="handle nw" data-handle="nw" type="button" aria-label="Övre vänstra hörnet"></button>
-          <button class="handle n" data-handle="n" type="button" aria-label="Överkant"></button>
-          <button class="handle ne" data-handle="ne" type="button" aria-label="Övre högra hörnet"></button>
-          <button class="handle e" data-handle="e" type="button" aria-label="Högerkant"></button>
-          <button class="handle se" data-handle="se" type="button" aria-label="Nedre högra hörnet"></button>
-          <button class="handle s" data-handle="s" type="button" aria-label="Underkant"></button>
-          <button class="handle sw" data-handle="sw" type="button" aria-label="Nedre vänstra hörnet"></button>
-          <button class="handle w" data-handle="w" type="button" aria-label="Vänsterkant"></button>
-        </div>
-        <div id="shadeTop" class="shade"></div>
-        <div id="shadeRight" class="shade"></div>
-        <div id="shadeBottom" class="shade"></div>
-        <div id="shadeLeft" class="shade"></div>
-      </div>
-    </div>
-
-    <section id="panelRotate" class="panel controls" hidden>
-      <p class="instruction">Rotera tills etiketten står rätt.</p>
+    <section id="panelEdit" class="panel" hidden>
       <div class="toolbar">
         <button id="rotateLeftButton" class="icon" type="button" aria-label="Rotera vänster">⟲</button>
         <button id="rotateRightButton" class="icon" type="button" aria-label="Rotera höger">⟳</button>
+        <button id="resetButton" class="push-right" type="button">Återställ</button>
       </div>
-    </section>
 
-    <section id="panelCrop" class="panel controls" hidden>
-      <p class="instruction">Dra rutan så att den ligger innanför de prickade klippstrecken.</p>
-      <button id="resetButton" type="button">Återställ markering</button>
+      <p class="instruction">Rotera etiketten rätt och dra den blå rutan innanför de prickade klippstrecken.</p>
+
+      <div id="preview" class="viewport">
+        <div id="pageStage" class="stage">
+          <canvas id="pdfCanvas" aria-label="Förhandsvisning"></canvas>
+          <div id="selection" class="selection" tabindex="0" aria-label="Beskärningsområde">
+            <button class="handle nw" data-handle="nw" type="button" aria-label="Övre vänstra hörnet"></button>
+            <button class="handle n" data-handle="n" type="button" aria-label="Överkant"></button>
+            <button class="handle ne" data-handle="ne" type="button" aria-label="Övre högra hörnet"></button>
+            <button class="handle e" data-handle="e" type="button" aria-label="Högerkant"></button>
+            <button class="handle se" data-handle="se" type="button" aria-label="Nedre högra hörnet"></button>
+            <button class="handle s" data-handle="s" type="button" aria-label="Underkant"></button>
+            <button class="handle sw" data-handle="sw" type="button" aria-label="Nedre vänstra hörnet"></button>
+            <button class="handle w" data-handle="w" type="button" aria-label="Vänsterkant"></button>
+          </div>
+          <div id="shadeTop" class="shade"></div>
+          <div id="shadeRight" class="shade"></div>
+          <div id="shadeBottom" class="shade"></div>
+          <div id="shadeLeft" class="shade"></div>
+        </div>
+      </div>
     </section>
 
     <section id="panelDownload" class="panel controls" hidden>

@@ -13,12 +13,11 @@ En minimalistisk, statisk webbapp som beskär Traderas A4-fraktsedel från PostN
 
 ## Användning
 
-Appen guidar dig i fyra steg:
+Appen guidar dig i tre steg:
 
 1. **Ladda upp** – välj eller släpp PDF-filen från Tradera (endast första sidan behandlas).
-2. **Rotera** – vrid etiketten rätt med **⟲ / ⟳**.
-3. **Markera** – dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken.
-4. **Ladda ner** – hämta etiketten och skriv ut i **100 % / faktisk storlek** på **104,4 × 187,8 mm** med ”Anpassa till sida” avstängt.
+2. **Rotera & markera** – vrid etiketten rätt med **⟲ / ⟳** och dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken.
+3. **Ladda ner** – hämta etiketten och skriv ut i **100 % / faktisk storlek** på **104,4 × 187,8 mm** med ”Anpassa till sida” avstängt.
 
 ## Köra lokalt
 

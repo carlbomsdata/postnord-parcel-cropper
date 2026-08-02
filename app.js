@@ -19,7 +19,7 @@
   const OUTPUT_WIDTH_MM = 104.4;
   const OUTPUT_HEIGHT_MM = 187.8;
   const MIN_SELECTION_PX = 30;
-  const STEPS = 4;
+  const STEPS = 3;
 
   // Beskärningsområdet innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
   const PRESET = Object.freeze({ x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 });
@@ -29,6 +29,7 @@
     dropZone: document.getElementById("dropZone"),
     stepEls: Array.from(document.querySelectorAll(".steps li")),
     panelUpload: document.getElementById("panelUpload"),
+    panelEdit: document.getElementById("panelEdit"),
     preview: document.getElementById("preview"),
     pageStage: document.getElementById("pageStage"),
     canvas: document.getElementById("pdfCanvas"),
@@ -37,8 +38,6 @@
     shadeRight: document.getElementById("shadeRight"),
     shadeBottom: document.getElementById("shadeBottom"),
     shadeLeft: document.getElementById("shadeLeft"),
-    panelRotate: document.getElementById("panelRotate"),
-    panelCrop: document.getElementById("panelCrop"),
     panelDownload: document.getElementById("panelDownload"),
     rotateLeftButton: document.getElementById("rotateLeftButton"),
     rotateRightButton: document.getElementById("rotateRightButton"),
@@ -149,19 +148,16 @@
     });
 
     el.panelUpload.hidden = s !== 1;
-    el.preview.hidden = !(s === 2 || s === 3);
-    el.preview.classList.toggle("crop-active", s === 3);
-    el.panelRotate.hidden = s !== 2;
-    el.panelCrop.hidden = s !== 3;
-    el.panelDownload.hidden = s !== 4;
+    el.panelEdit.hidden = s !== 2;
+    el.panelDownload.hidden = s !== 3;
 
     el.backButton.hidden = s === 1;
     el.backButton.textContent = s === 2 ? "Byt fil" : "Tillbaka";
-    el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2 || s === 3);
+    el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2);
     el.nextButton.textContent = s === 1 ? "Fortsätt" : "Nästa";
 
     setStatus("");
-    if (s === 2 || s === 3) renderPage();
+    if (s === 2) renderPage();
   }
 
   function goNext() {
