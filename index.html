@@ -18,6 +18,11 @@
       <li data-step="3">Ladda ner</li>
     </ol>
 
+    <div class="nav">
+      <button id="backButton" type="button" hidden>Tillbaka</button>
+      <button id="nextButton" class="primary" type="button" hidden>Nästa</button>
+    </div>
+
     <section id="panelUpload" class="panel">
       <label id="dropZone" class="drop" for="fileInput">
         <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden>
@@ -63,11 +68,6 @@
         <button id="newFileButton" type="button">Ny fil</button>
       </div>
     </section>
-
-    <div class="nav">
-      <button id="backButton" type="button" hidden>Tillbaka</button>
-      <button id="nextButton" class="primary" type="button" hidden>Nästa</button>
-    </div>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>
   </main>
