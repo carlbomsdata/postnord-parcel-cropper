@@ -2,24 +2,34 @@
 (() => {
   "use strict";
 
+  const statusEl = document.getElementById("status");
+  function setStatus(message, type = "") {
+    statusEl.textContent = message;
+    statusEl.className = `status ${type}`.trim();
+  }
+
   if (typeof pdfjsLib === "undefined" || typeof PDFLib === "undefined") {
-    const status = document.getElementById("status");
-    if (status) {
-      status.textContent = "Kunde inte ladda nödvändiga bibliotek. Kontrollera din internetanslutning och ladda om sidan.";
-      status.className = "status error";
-    }
+    setStatus("Kunde inte ladda nödvändiga bibliotek. Kontrollera internet och ladda om sidan.", "error");
     return;
   }
 
-  const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-  const elements = {
+  const OUTPUT_WIDTH_MM = 104.4;
+  const OUTPUT_HEIGHT_MM = 187.8;
+  const MIN_SELECTION_PX = 30;
+  const STEPS = 4;
+
+  // Beskärningsområdet innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
+  const PRESET = Object.freeze({ x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 });
+
+  const el = {
     fileInput: document.getElementById("fileInput"),
     dropZone: document.getElementById("dropZone"),
-    fileInfo: document.getElementById("fileInfo"),
-    workspace: document.getElementById("workspace"),
-    previewViewport: document.getElementById("previewViewport"),
+    stepEls: Array.from(document.querySelectorAll(".steps li")),
+    panelUpload: document.getElementById("panelUpload"),
+    preview: document.getElementById("preview"),
     pageStage: document.getElementById("pageStage"),
     canvas: document.getElementById("pdfCanvas"),
     selection: document.getElementById("selection"),
@@ -27,40 +37,24 @@
     shadeRight: document.getElementById("shadeRight"),
     shadeBottom: document.getElementById("shadeBottom"),
     shadeLeft: document.getElementById("shadeLeft"),
-    cropSize: document.getElementById("cropSize"),
-    ratioStatus: document.getElementById("ratioStatus"),
-    presetButton: document.getElementById("presetButton"),
-    resetButton: document.getElementById("resetButton"),
+    panelRotate: document.getElementById("panelRotate"),
+    panelCrop: document.getElementById("panelCrop"),
+    panelDownload: document.getElementById("panelDownload"),
     rotateLeftButton: document.getElementById("rotateLeftButton"),
     rotateRightButton: document.getElementById("rotateRightButton"),
-    outputWidth: document.getElementById("outputWidth"),
-    outputHeight: document.getElementById("outputHeight"),
-    preserveAspect: document.getElementById("preserveAspect"),
-    outputFilename: document.getElementById("outputFilename"),
-    createButton: document.getElementById("createButton"),
-    status: document.getElementById("status"),
-    resultActions: document.getElementById("resultActions"),
+    resetButton: document.getElementById("resetButton"),
     downloadButton: document.getElementById("downloadButton"),
-    printButton: document.getElementById("printButton"),
-    outputPreviewWrap: document.getElementById("outputPreviewWrap"),
-    outputPreview: document.getElementById("outputPreview")
+    newFileButton: document.getElementById("newFileButton"),
+    backButton: document.getElementById("backButton"),
+    nextButton: document.getElementById("nextButton")
   };
 
-  const DEFAULT_WIDTH_MM = 104.4;
-  const DEFAULT_HEIGHT_MM = 187.8;
-
-  // Beskärningsområdet innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
-  const PRESET = Object.freeze({ x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 });
-  const DEFAULT_SELECTION = Object.freeze({ x: 0.08, y: 0.12, width: 0.45, height: 0.65 });
-  const MIN_SELECTION_PX = 30;
-
   const state = {
-    file: null,
+    step: 1,
     sourceBytes: null,
+    sourceName: "",
     pdfDocument: null,
     pdfPage: null,
-    pdfWidth: 0,
-    pdfHeight: 0,
     stageWidth: 0,
     stageHeight: 0,
     baseRotation: 0,
@@ -72,10 +66,6 @@
     isRendering: false,
     renderQueued: false
   };
-
-  function cloneSelection(selection) {
-    return { x: selection.x, y: selection.y, width: selection.width, height: selection.height };
-  }
 
   function normalizeAngle(angle) {
     return ((angle % 360) + 360) % 360;
@@ -94,8 +84,12 @@
     return { x: s.y, y: 1 - s.x - s.width, width: s.height, height: s.width };
   }
 
-  function rotateSelection180(s) {
-    return { x: 1 - s.x - s.width, y: 1 - s.y - s.height, width: s.width, height: s.height };
+  // Presetrutan uttryckt i den aktuella rotationens visningsram.
+  function presetForCurrentRotation() {
+    let s = { ...PRESET };
+    const turns = normalizeAngle(state.userRotation) / 90;
+    for (let i = 0; i < turns; i++) s = rotateSelectionCW(s);
+    return s;
   }
 
   // Mappa en punkt i den visade (roterade) bilden till källsidans normaliserade
@@ -117,19 +111,9 @@
     return mm * 72 / 25.4;
   }
 
-  function pointsToMm(points) {
-    return points * 25.4 / 72;
-  }
-
-  function normalizeFilename(filename) {
-    const value = (filename || "fraktsedel-etikett.pdf").trim();
-    const safe = value.replace(/[\\/:*?"<>|]+/g, "-");
-    return safe.toLowerCase().endsWith(".pdf") ? safe : `${safe}.pdf`;
-  }
-
-  function setStatus(message, type = "") {
-    elements.status.textContent = message;
-    elements.status.className = `status ${type}`.trim();
+  function outputFilename() {
+    const base = (state.sourceName || "fraktsedel").replace(/\.pdf$/i, "").replace(/[\\/:*?"<>|]+/g, "-");
+    return `${base}-etikett.pdf`;
   }
 
   function revokeGeneratedUrl() {
@@ -137,10 +121,49 @@
       URL.revokeObjectURL(state.generatedUrl);
       state.generatedUrl = null;
     }
-    elements.resultActions.hidden = true;
-    elements.outputPreviewWrap.hidden = true;
-    elements.outputPreview.removeAttribute("src");
   }
+
+  // --- Guide-navigering ------------------------------------------------------
+
+  function goToStep(step) {
+    state.step = clamp(step, 1, STEPS);
+    renderStep();
+  }
+
+  function renderStep() {
+    const s = state.step;
+
+    el.stepEls.forEach((li, index) => {
+      const stepNumber = index + 1;
+      li.classList.toggle("active", stepNumber === s);
+      li.classList.toggle("done", stepNumber < s);
+    });
+
+    el.panelUpload.hidden = s !== 1;
+    el.preview.hidden = !(s === 2 || s === 3);
+    el.preview.classList.toggle("crop-active", s === 3);
+    el.panelRotate.hidden = s !== 2;
+    el.panelCrop.hidden = s !== 3;
+    el.panelDownload.hidden = s !== 4;
+
+    el.backButton.hidden = s === 1;
+    el.backButton.textContent = s === 2 ? "Byt fil" : "Tillbaka";
+    el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2 || s === 3);
+    el.nextButton.textContent = s === 1 ? "Fortsätt" : "Nästa";
+
+    setStatus("");
+    if (s === 2 || s === 3) renderPage();
+  }
+
+  function goNext() {
+    goToStep(state.step + 1);
+  }
+
+  function goBack() {
+    goToStep(state.step - 1);
+  }
+
+  // --- Inläsning & rendering -------------------------------------------------
 
   async function loadFile(file) {
     if (!file || (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"))) {
@@ -148,13 +171,9 @@
       return;
     }
 
-    revokeGeneratedUrl();
     setStatus("Läser PDF…");
-    elements.createButton.disabled = true;
 
     try {
-      // Läs in i lokala variabler och byt state först när allt lyckats, så att
-      // ett misslyckande inte lämnar appen i ett inkonsekvent läge.
       const bytes = new Uint8Array(await file.arrayBuffer());
       const pdfDocument = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
       const pdfPage = await pdfDocument.getPage(1);
@@ -163,26 +182,18 @@
         try { state.pdfDocument.destroy(); } catch (_) { /* no-op */ }
       }
 
-      state.file = file;
       state.sourceBytes = bytes;
+      state.sourceName = file.name;
       state.pdfDocument = pdfDocument;
       state.pdfPage = pdfPage;
       state.baseRotation = normalizeAngle(pdfPage.rotate || 0);
-      state.userRotation = 180;
-      state.selection = rotateSelection180(PRESET);
+      state.userRotation = 0;
+      state.selection = { ...PRESET };
 
-      elements.fileInfo.hidden = false;
-      elements.fileInfo.textContent = `${file.name} • ${pdfDocument.numPages} sida${pdfDocument.numPages === 1 ? "" : "or"}`;
-      elements.workspace.hidden = false;
-      elements.outputFilename.value = `${file.name.replace(/\.pdf$/i, "")}-etikett.pdf`;
-
-      await renderPage();
-      setStatus("Rotera och markera etiketten, skapa sedan PDF:en.");
+      goToStep(2);
     } catch (error) {
       console.error(error);
       setStatus("PDF-filen kunde inte läsas. Kontrollera att den inte är lösenordsskyddad.", "error");
-    } finally {
-      elements.createButton.disabled = false;
     }
   }
 
@@ -197,10 +208,8 @@
     try {
       const rotation = totalRotation();
       const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
-      state.pdfWidth = scaleViewport.width;
-      state.pdfHeight = scaleViewport.height;
 
-      const availableWidth = Math.max(280, Math.min(950, elements.previewViewport.clientWidth - 30));
+      const availableWidth = Math.max(280, Math.min(900, el.preview.clientWidth - 30));
       const cssScale = availableWidth / scaleViewport.width;
       const cssViewport = state.pdfPage.getViewport({ scale: cssScale, rotation });
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -209,14 +218,14 @@
       state.stageWidth = cssViewport.width;
       state.stageHeight = cssViewport.height;
 
-      elements.pageStage.style.width = `${state.stageWidth}px`;
-      elements.pageStage.style.height = `${state.stageHeight}px`;
-      elements.canvas.style.width = `${state.stageWidth}px`;
-      elements.canvas.style.height = `${state.stageHeight}px`;
-      elements.canvas.width = Math.ceil(renderViewport.width);
-      elements.canvas.height = Math.ceil(renderViewport.height);
+      el.pageStage.style.width = `${state.stageWidth}px`;
+      el.pageStage.style.height = `${state.stageHeight}px`;
+      el.canvas.style.width = `${state.stageWidth}px`;
+      el.canvas.style.height = `${state.stageHeight}px`;
+      el.canvas.width = Math.ceil(renderViewport.width);
+      el.canvas.height = Math.ceil(renderViewport.height);
 
-      const context = elements.canvas.getContext("2d", { alpha: false });
+      const context = el.canvas.getContext("2d", { alpha: false });
       await state.pdfPage.render({ canvasContext: context, viewport: renderViewport }).promise;
       updateSelectionUi();
     } finally {
@@ -227,6 +236,8 @@
       }
     }
   }
+
+  // --- Markering -------------------------------------------------------------
 
   function getSelectionPixels() {
     return {
@@ -253,7 +264,6 @@
       height: rect.height / state.stageHeight
     };
     updateSelectionUi();
-    revokeGeneratedUrl();
   }
 
   function updateSelectionUi() {
@@ -263,66 +273,32 @@
     const right = rect.x + rect.width;
     const bottom = rect.y + rect.height;
 
-    Object.assign(elements.selection.style, {
+    Object.assign(el.selection.style, {
       left: `${rect.x}px`,
       top: `${rect.y}px`,
       width: `${rect.width}px`,
       height: `${rect.height}px`
     });
 
-    Object.assign(elements.shadeTop.style, {
+    Object.assign(el.shadeTop.style, {
       left: "0px", top: "0px", width: `${state.stageWidth}px`, height: `${rect.y}px`
     });
-    Object.assign(elements.shadeBottom.style, {
+    Object.assign(el.shadeBottom.style, {
       left: "0px", top: `${bottom}px`, width: `${state.stageWidth}px`, height: `${Math.max(0, state.stageHeight - bottom)}px`
     });
-    Object.assign(elements.shadeLeft.style, {
+    Object.assign(el.shadeLeft.style, {
       left: "0px", top: `${rect.y}px`, width: `${rect.x}px`, height: `${rect.height}px`
     });
-    Object.assign(elements.shadeRight.style, {
+    Object.assign(el.shadeRight.style, {
       left: `${right}px`, top: `${rect.y}px`, width: `${Math.max(0, state.stageWidth - right)}px`, height: `${rect.height}px`
     });
-
-    updateCropMeta();
-  }
-
-  function updateCropMeta() {
-    if (!state.pdfWidth || !state.pdfHeight) return;
-
-    const cropWidthPt = state.selection.width * state.pdfWidth;
-    const cropHeightPt = state.selection.height * state.pdfHeight;
-    const cropWidthMm = pointsToMm(cropWidthPt);
-    const cropHeightMm = pointsToMm(cropHeightPt);
-    elements.cropSize.textContent = `Markering: ${cropWidthMm.toFixed(1)} × ${cropHeightMm.toFixed(1)} mm i originalet`;
-
-    const outputWidth = Number(elements.outputWidth.value) || DEFAULT_WIDTH_MM;
-    const outputHeight = Number(elements.outputHeight.value) || DEFAULT_HEIGHT_MM;
-    const cropRatio = cropWidthPt / cropHeightPt;
-    const outputRatio = outputWidth / outputHeight;
-    const difference = Math.abs(cropRatio / outputRatio - 1) * 100;
-
-    elements.ratioStatus.className = difference <= 1.5 ? "ok" : "warning";
-    elements.ratioStatus.textContent = difference <= 1.5
-      ? "Proportionerna stämmer"
-      : `Proportionerna skiljer ${difference.toFixed(1)} %`;
-  }
-
-  function applyPreset() {
-    if (!state.pdfPage) return;
-    state.userRotation = 180;
-    state.selection = rotateSelection180(PRESET);
-    renderPage();
-    revokeGeneratedUrl();
-    setStatus("Preset tillämpad – etiketten vänds rätt och rutan ligger innanför klippstrecken.");
   }
 
   function resetSelection() {
     if (!state.pdfPage) return;
-    state.userRotation = 0;
-    state.selection = cloneSelection(DEFAULT_SELECTION);
-    renderPage();
-    revokeGeneratedUrl();
-    setStatus("Markering och rotation återställda.");
+    state.selection = presetForCurrentRotation();
+    updateSelectionUi();
+    setStatus("Markeringen återställd.");
   }
 
   function rotate(direction) {
@@ -332,8 +308,7 @@
       ? rotateSelectionCW(state.selection)
       : rotateSelectionCCW(state.selection);
     renderPage();
-    revokeGeneratedUrl();
-    setStatus(`Roterad till ${totalRotation()}°.`);
+    setStatus("");
   }
 
   function beginPointerSession(event) {
@@ -351,7 +326,7 @@
       startRect: { ...rect }
     };
 
-    elements.selection.setPointerCapture(event.pointerId);
+    el.selection.setPointerCapture(event.pointerId);
     event.preventDefault();
   }
 
@@ -387,7 +362,7 @@
   function endPointerSession(event) {
     if (!state.pointerSession || state.pointerSession.pointerId !== event.pointerId) return;
     state.pointerSession = null;
-    try { elements.selection.releasePointerCapture(event.pointerId); } catch (_) { /* no-op */ }
+    try { el.selection.releasePointerCapture(event.pointerId); } catch (_) { /* no-op */ }
   }
 
   function nudgeSelection(event) {
@@ -403,22 +378,13 @@
     setSelectionFromPixels(rect);
   }
 
-  async function createOutputPdf() {
-    if (!state.sourceBytes) {
-      setStatus("Välj först en PDF-fil.", "error");
-      return;
-    }
+  // --- Export ----------------------------------------------------------------
 
-    const outputWidthMm = Number(elements.outputWidth.value);
-    const outputHeightMm = Number(elements.outputHeight.value);
-    if (!Number.isFinite(outputWidthMm) || !Number.isFinite(outputHeightMm) || outputWidthMm <= 0 || outputHeightMm <= 0) {
-      setStatus("Ange giltig bredd och höjd.", "error");
-      return;
-    }
+  async function createAndDownload() {
+    if (!state.sourceBytes) return;
 
-    elements.createButton.disabled = true;
-    revokeGeneratedUrl();
-    setStatus("Skapar PDF…");
+    el.downloadButton.disabled = true;
+    setStatus("Skapar etikett…");
 
     try {
       const { PDFDocument, degrees } = PDFLib;
@@ -454,24 +420,19 @@
       const displayWidth = swapped ? embedHeight : embedWidth;
       const displayHeight = swapped ? embedWidth : embedHeight;
 
-      const outputWidth = mmToPoints(outputWidthMm);
-      const outputHeight = mmToPoints(outputHeightMm);
+      const outputWidth = mmToPoints(OUTPUT_WIDTH_MM);
+      const outputHeight = mmToPoints(OUTPUT_HEIGHT_MM);
       const outputPage = outputPdf.addPage([outputWidth, outputHeight]);
 
-      let fitWidth = outputWidth;
-      let fitHeight = outputHeight;
-      let offsetX = 0;
-      let offsetY = 0;
-      if (elements.preserveAspect.checked) {
-        const scale = Math.min(outputWidth / displayWidth, outputHeight / displayHeight);
-        fitWidth = displayWidth * scale;
-        fitHeight = displayHeight * scale;
-        offsetX = (outputWidth - fitWidth) / 2;
-        offsetY = (outputHeight - fitHeight) / 2;
-      }
+      // Centrera med bibehållna proportioner (ingen förvrängning av streckkoder).
+      const scale = Math.min(outputWidth / displayWidth, outputHeight / displayHeight);
+      const fitWidth = displayWidth * scale;
+      const fitHeight = displayHeight * scale;
+      const offsetX = (outputWidth - fitWidth) / 2;
+      const offsetY = (outputHeight - fitHeight) / 2;
 
-      // Placera det (källorienterade) utsnittet så att det visas roterat exakt som
-      // i förhandsvisningen. pdf-lib roterar moturs för positiva grader.
+      // Placera det källorienterade utsnittet roterat exakt som i förhandsvisningen.
+      // pdf-lib roterar moturs för positiva grader.
       let drawWidth;
       let drawHeight;
       let drawX;
@@ -509,57 +470,52 @@
 
       const pdfBytes = await outputPdf.save({ useObjectStreams: false });
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      revokeGeneratedUrl();
       state.generatedUrl = URL.createObjectURL(blob);
 
-      const filename = normalizeFilename(elements.outputFilename.value);
-      elements.outputFilename.value = filename;
-      elements.downloadButton.href = state.generatedUrl;
-      elements.downloadButton.download = filename;
-      elements.outputPreview.src = state.generatedUrl;
-      elements.resultActions.hidden = false;
-      elements.outputPreviewWrap.hidden = false;
-      setStatus("PDF skapad. Kontrollera förhandsvisningen innan utskrift.", "success");
+      const link = document.createElement("a");
+      link.href = state.generatedUrl;
+      link.download = outputFilename();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setStatus("Etikett nedladdad.", "success");
     } catch (error) {
       console.error(error);
-      setStatus("PDF:en kunde inte skapas. Prova att ladda om sidan och välj filen igen.", "error");
+      setStatus("Kunde inte skapa etiketten. Ladda om sidan och försök igen.", "error");
     } finally {
-      elements.createButton.disabled = false;
+      el.downloadButton.disabled = false;
     }
   }
 
-  function openForPrint() {
-    if (!state.generatedUrl) return;
-    const opened = window.open(state.generatedUrl, "_blank", "noopener,noreferrer");
-    if (!opened) setStatus("Webbläsaren blockerade det nya fönstret. Tillåt popup-fönster och försök igen.", "error");
-  }
+  // --- Händelser -------------------------------------------------------------
 
-  elements.fileInput.addEventListener("change", () => loadFile(elements.fileInput.files[0]));
-  elements.dropZone.addEventListener("dragover", event => {
+  el.fileInput.addEventListener("change", () => loadFile(el.fileInput.files[0]));
+  el.dropZone.addEventListener("dragover", event => {
     event.preventDefault();
-    elements.dropZone.classList.add("dragover");
+    el.dropZone.classList.add("drag");
   });
-  elements.dropZone.addEventListener("dragleave", () => elements.dropZone.classList.remove("dragover"));
-  elements.dropZone.addEventListener("drop", event => {
+  el.dropZone.addEventListener("dragleave", () => el.dropZone.classList.remove("drag"));
+  el.dropZone.addEventListener("drop", event => {
     event.preventDefault();
-    elements.dropZone.classList.remove("dragover");
+    el.dropZone.classList.remove("drag");
     loadFile(event.dataTransfer.files[0]);
   });
 
-  elements.selection.addEventListener("pointerdown", beginPointerSession);
-  elements.selection.addEventListener("pointermove", movePointerSession);
-  elements.selection.addEventListener("pointerup", endPointerSession);
-  elements.selection.addEventListener("pointercancel", endPointerSession);
-  elements.selection.addEventListener("keydown", nudgeSelection);
+  el.selection.addEventListener("pointerdown", beginPointerSession);
+  el.selection.addEventListener("pointermove", movePointerSession);
+  el.selection.addEventListener("pointerup", endPointerSession);
+  el.selection.addEventListener("pointercancel", endPointerSession);
+  el.selection.addEventListener("keydown", nudgeSelection);
 
-  elements.presetButton.addEventListener("click", applyPreset);
-  elements.resetButton.addEventListener("click", resetSelection);
-  elements.rotateLeftButton.addEventListener("click", () => rotate(-90));
-  elements.rotateRightButton.addEventListener("click", () => rotate(90));
-  elements.createButton.addEventListener("click", createOutputPdf);
-  elements.printButton.addEventListener("click", openForPrint);
-  elements.outputWidth.addEventListener("input", () => { updateCropMeta(); revokeGeneratedUrl(); });
-  elements.outputHeight.addEventListener("input", () => { updateCropMeta(); revokeGeneratedUrl(); });
-  elements.preserveAspect.addEventListener("change", revokeGeneratedUrl);
+  el.rotateLeftButton.addEventListener("click", () => rotate(-90));
+  el.rotateRightButton.addEventListener("click", () => rotate(90));
+  el.resetButton.addEventListener("click", resetSelection);
+  el.downloadButton.addEventListener("click", createAndDownload);
+  el.newFileButton.addEventListener("click", () => el.fileInput.click());
+  el.backButton.addEventListener("click", goBack);
+  el.nextButton.addEventListener("click", goNext);
 
   window.addEventListener("resize", () => {
     clearTimeout(state.resizeTimer);
@@ -567,4 +523,6 @@
   });
 
   window.addEventListener("beforeunload", revokeGeneratedUrl);
+
+  renderStep();
 })();

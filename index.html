@@ -3,131 +3,77 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#ffffff">
   <title>Fraktsedelsklippare</title>
-  <meta name="description" content="Beskär Traderas PostNord-fraktsedel till en 104,4 × 187,8 mm-etikett direkt i webbläsaren.">
+  <meta name="description" content="Beskär PostNord-fraktsedeln till en 104,4 × 187,8 mm-etikett direkt i webbläsaren.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <div>
-      <p class="eyebrow">Tradera / PostNord</p>
-      <h1>Fraktsedelsklippare</h1>
-      <p class="lead">Ladda upp A4-PDF:en, rotera och markera etiketten – hämta en ren 104,4 × 187,8 mm-etikett för Zebra eller annan etikettskrivare.</p>
-    </div>
-    <div class="privacy-badge" title="PDF-filen lämnar aldrig din webbläsare">
-      <span aria-hidden="true">●</span> Allt sker lokalt
-    </div>
-  </header>
-
   <main>
-    <section class="card upload-card">
-      <label id="dropZone" class="drop-zone" for="fileInput">
-        <input id="fileInput" type="file" accept="application/pdf,.pdf">
-        <span class="drop-icon" aria-hidden="true">PDF</span>
-        <strong>Välj eller släpp en fraktsedel här</strong>
-        <span>Endast den första PDF-sidan behandlas.</span>
+    <h1>Fraktsedelsklippare</h1>
+
+    <ol class="steps">
+      <li data-step="1">Ladda upp</li>
+      <li data-step="2">Rotera</li>
+      <li data-step="3">Markera</li>
+      <li data-step="4">Ladda ner</li>
+    </ol>
+
+    <section id="panelUpload" class="panel">
+      <label id="dropZone" class="drop" for="fileInput">
+        <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden>
+        <span>Välj eller släpp en PDF-fraktsedel</span>
       </label>
-      <p id="fileInfo" class="file-info" hidden></p>
     </section>
 
-    <section id="workspace" class="card workspace" hidden>
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Beskär etiketten</p>
-          <h2>Rotera &amp; markera</h2>
+    <div id="preview" class="viewport" hidden>
+      <div id="pageStage" class="stage">
+        <canvas id="pdfCanvas" aria-label="Förhandsvisning"></canvas>
+        <div id="selection" class="selection" tabindex="0" aria-label="Beskärningsområde">
+          <button class="handle nw" data-handle="nw" type="button" aria-label="Övre vänstra hörnet"></button>
+          <button class="handle n" data-handle="n" type="button" aria-label="Överkant"></button>
+          <button class="handle ne" data-handle="ne" type="button" aria-label="Övre högra hörnet"></button>
+          <button class="handle e" data-handle="e" type="button" aria-label="Högerkant"></button>
+          <button class="handle se" data-handle="se" type="button" aria-label="Nedre högra hörnet"></button>
+          <button class="handle s" data-handle="s" type="button" aria-label="Underkant"></button>
+          <button class="handle sw" data-handle="sw" type="button" aria-label="Nedre vänstra hörnet"></button>
+          <button class="handle w" data-handle="w" type="button" aria-label="Vänsterkant"></button>
         </div>
-        <div class="toolbar">
-          <button id="rotateLeftButton" class="button secondary" type="button" aria-label="Rotera 90° moturs">⟲ Vänster</button>
-          <button id="rotateRightButton" class="button secondary" type="button" aria-label="Rotera 90° medurs">Höger ⟳</button>
-          <button id="presetButton" class="button secondary" type="button">Preset</button>
-          <button id="resetButton" class="button ghost" type="button">Återställ</button>
-        </div>
+        <div id="shadeTop" class="shade"></div>
+        <div id="shadeRight" class="shade"></div>
+        <div id="shadeBottom" class="shade"></div>
+        <div id="shadeLeft" class="shade"></div>
       </div>
+    </div>
 
-      <p class="instruction"><strong>Rotera</strong> etiketten rätt och dra den blå rutan så att den ligger <strong>innanför</strong> de prickade klippstrecken. Finjustera med handtagen eller piltangenterna.</p>
-
-      <div id="previewViewport" class="preview-viewport">
-        <div id="pageStage" class="page-stage">
-          <canvas id="pdfCanvas" aria-label="Förhandsvisning av PDF"></canvas>
-          <div id="selection" class="selection" tabindex="0" aria-label="Beskärningsområde">
-            <span class="selection-label">Etikett</span>
-            <button class="handle nw" data-handle="nw" type="button" aria-label="Ändra övre vänstra hörnet"></button>
-            <button class="handle n" data-handle="n" type="button" aria-label="Ändra överkant"></button>
-            <button class="handle ne" data-handle="ne" type="button" aria-label="Ändra övre högra hörnet"></button>
-            <button class="handle e" data-handle="e" type="button" aria-label="Ändra högerkant"></button>
-            <button class="handle se" data-handle="se" type="button" aria-label="Ändra nedre högra hörnet"></button>
-            <button class="handle s" data-handle="s" type="button" aria-label="Ändra underkant"></button>
-            <button class="handle sw" data-handle="sw" type="button" aria-label="Ändra nedre vänstra hörnet"></button>
-            <button class="handle w" data-handle="w" type="button" aria-label="Ändra vänsterkant"></button>
-          </div>
-          <div id="shadeTop" class="shade shade-top"></div>
-          <div id="shadeRight" class="shade shade-right"></div>
-          <div id="shadeBottom" class="shade shade-bottom"></div>
-          <div id="shadeLeft" class="shade shade-left"></div>
-        </div>
-      </div>
-
-      <div class="crop-meta">
-        <span id="cropSize">Markering: –</span>
-        <span id="ratioStatus">Format: –</span>
-      </div>
-
-      <div class="action-row">
-        <button id="createButton" class="button primary" type="button">Skapa PDF-etikett</button>
-        <div id="resultActions" class="result-actions" hidden>
-          <a id="downloadButton" class="button primary" download>Hämta PDF</a>
-          <button id="printButton" class="button secondary" type="button">Öppna för utskrift</button>
-        </div>
-      </div>
-      <p id="status" class="status" role="status" aria-live="polite"></p>
-
-      <details class="advanced">
-        <summary>Avancerat – storlek &amp; filnamn</summary>
-        <div class="advanced-grid">
-          <label class="field">
-            <span>Bredd</span>
-            <span class="input-with-unit">
-              <input id="outputWidth" type="number" min="20" max="500" step="0.1" value="104.4">
-              <span>mm</span>
-            </span>
-          </label>
-          <label class="field">
-            <span>Höjd</span>
-            <span class="input-with-unit">
-              <input id="outputHeight" type="number" min="20" max="1000" step="0.1" value="187.8">
-              <span>mm</span>
-            </span>
-          </label>
-          <label class="check-row full-width">
-            <input id="preserveAspect" type="checkbox" checked>
-            <span>
-              <strong>Behåll proportioner</strong>
-              <small>Centrerar etiketten utan att förvränga streckkoderna.</small>
-            </span>
-          </label>
-          <label class="field full-width">
-            <span>Filnamn</span>
-            <input id="outputFilename" type="text" value="fraktsedel-etikett.pdf" autocomplete="off">
-          </label>
-        </div>
-      </details>
-
-      <div id="outputPreviewWrap" class="output-preview" hidden>
-        <p class="eyebrow">Resultat</p>
-        <iframe id="outputPreview" title="Förhandsvisning av beskuren fraktsedel"></iframe>
+    <section id="panelRotate" class="panel controls" hidden>
+      <p class="instruction">Rotera tills etiketten står rätt.</p>
+      <div class="toolbar">
+        <button id="rotateLeftButton" class="icon" type="button" aria-label="Rotera vänster">⟲</button>
+        <button id="rotateRightButton" class="icon" type="button" aria-label="Rotera höger">⟳</button>
       </div>
     </section>
 
-    <section class="card help-card">
-      <h2>Utskrift</h2>
-      <p>Välj <strong>104,4 × 187,8 mm</strong>, <strong>100 % / faktisk storlek</strong> och stäng av ”Anpassa till sida”. PDF:en behåller originalets text och streckkoder som PDF-innehåll – den görs inte om till en skärmbild.</p>
+    <section id="panelCrop" class="panel controls" hidden>
+      <p class="instruction">Dra rutan så att den ligger innanför de prickade klippstrecken.</p>
+      <button id="resetButton" type="button">Återställ markering</button>
     </section>
+
+    <section id="panelDownload" class="panel controls" hidden>
+      <p class="instruction">Klart. Ladda ner och skriv ut i 100 % / faktisk storlek på 104,4 × 187,8 mm.</p>
+      <div class="toolbar">
+        <button id="downloadButton" class="primary" type="button">Ladda ner etikett</button>
+        <button id="newFileButton" type="button">Ny fil</button>
+      </div>
+    </section>
+
+    <div class="nav">
+      <button id="backButton" type="button" hidden>Tillbaka</button>
+      <button id="nextButton" class="primary" type="button" hidden>Nästa</button>
+    </div>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
   </main>
-
-  <footer>
-    <p>Ingen uppladdning. Ingen lagring. Appen körs helt i din webbläsare.</p>
-  </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
