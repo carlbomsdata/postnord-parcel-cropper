@@ -44,10 +44,12 @@
     rotateLeftButton: document.getElementById("rotateLeftButton"),
     rotateRightButton: document.getElementById("rotateRightButton"),
     resetButton: document.getElementById("resetButton"),
+    zoomInButton: document.getElementById("zoomInButton"),
+    zoomOutButton: document.getElementById("zoomOutButton"),
     downloadButton: document.getElementById("downloadButton"),
-    newFileButton: document.getElementById("newFileButton"),
     backButton: document.getElementById("backButton"),
-    nextButton: document.getElementById("nextButton")
+    nextButton: document.getElementById("nextButton"),
+    nav: document.querySelector(".nav")
   };
 
   const state = {
@@ -60,6 +62,7 @@
     stageHeight: 0,
     baseRotation: 0,
     userRotation: 0,
+    zoom: 1,
     selection: { ...PRESET },
     generatedUrl: null,
     resultDoc: null,
@@ -155,9 +158,11 @@
     el.panelDownload.hidden = s !== 3;
 
     el.backButton.hidden = s === 1;
-    el.backButton.textContent = s === 2 ? "Byt fil" : "Tillbaka";
+    el.backButton.textContent = "Tillbaka";
     el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2);
     el.nextButton.textContent = s === 1 ? "Fortsätt" : "Nästa";
+    el.downloadButton.hidden = s !== 3;
+    el.nav.hidden = el.backButton.hidden && el.nextButton.hidden && el.downloadButton.hidden;
 
     setStatus("");
     if (s === 2) renderPage();
@@ -197,6 +202,7 @@
       state.pdfPage = pdfPage;
       state.baseRotation = normalizeAngle(pdfPage.rotate || 0);
       state.userRotation = 0;
+      state.zoom = 1;
       state.selection = { ...PRESET };
 
       goToStep(2);
@@ -218,10 +224,11 @@
       const rotation = totalRotation();
       const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
 
-      // Skala så att hela sidan ryms inom både bredd och höjd – ingen inre scroll.
-      const availableWidth = Math.max(280, Math.min(900, el.preview.clientWidth - 30));
-      const availableHeight = Math.max(320, window.innerHeight - 300);
-      const cssScale = Math.min(availableWidth / scaleViewport.width, availableHeight / scaleViewport.height);
+      // Passa in i den lediga ytan (bredd + höjd) och multiplicera med zoom.
+      const availableWidth = Math.max(240, el.preview.clientWidth - 28);
+      const availableHeight = Math.max(240, el.preview.clientHeight - 28);
+      const fitScale = Math.min(availableWidth / scaleViewport.width, availableHeight / scaleViewport.height);
+      const cssScale = fitScale * state.zoom;
       const cssViewport = state.pdfPage.getViewport({ scale: cssScale, rotation });
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       const renderViewport = state.pdfPage.getViewport({ scale: cssScale * pixelRatio, rotation });
@@ -307,9 +314,10 @@
 
   function resetSelection() {
     if (!state.pdfPage) return;
+    state.zoom = 1;
     state.selection = presetForCurrentRotation();
-    updateSelectionUi();
-    setStatus("Markeringen återställd.");
+    renderPage();
+    setStatus("");
   }
 
   function rotate(direction) {
@@ -320,6 +328,12 @@
       : rotateSelectionCCW(state.selection);
     renderPage();
     setStatus("");
+  }
+
+  function applyZoom(factor) {
+    if (!state.pdfPage) return;
+    state.zoom = clamp(state.zoom * factor, 1, 5);
+    renderPage();
   }
 
   function beginPointerSession(event) {
@@ -485,7 +499,7 @@
       revokeGeneratedUrl();
       state.generatedUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       await renderResult(bytes);
-      setStatus("");
+      setStatus("Skriv ut i faktisk storlek – ingen skalning.");
     } catch (error) {
       console.error(error);
       setStatus("Kunde inte skapa etiketten. Gå tillbaka och försök igen.", "error");
@@ -503,8 +517,8 @@
     const page = await doc.getPage(1);
 
     const base = page.getViewport({ scale: 1 });
-    const availableWidth = Math.max(200, Math.min(360, el.resultPreview.clientWidth - 28));
-    const availableHeight = Math.max(280, window.innerHeight - 300);
+    const availableWidth = Math.max(200, el.resultPreview.clientWidth - 28);
+    const availableHeight = Math.max(200, el.resultPreview.clientHeight - 28);
     const cssScale = Math.min(availableWidth / base.width, availableHeight / base.height);
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     const cssViewport = page.getViewport({ scale: cssScale });
@@ -552,9 +566,10 @@
 
   el.rotateLeftButton.addEventListener("click", () => rotate(-90));
   el.rotateRightButton.addEventListener("click", () => rotate(90));
+  el.zoomInButton.addEventListener("click", () => applyZoom(1.25));
+  el.zoomOutButton.addEventListener("click", () => applyZoom(0.8));
   el.resetButton.addEventListener("click", resetSelection);
   el.downloadButton.addEventListener("click", downloadResult);
-  el.newFileButton.addEventListener("click", () => el.fileInput.click());
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", goNext);
 
