@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Fraktsedelsklippare</title>
+  <meta name="description" content="Beskär Traderas PostNord-fraktsedel till 102 x 192 mm direkt i webbläsaren.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">Tradera / PostNord</p>
+      <h1>Fraktsedelsklippare</h1>
+      <p class="lead">Beskär A4-PDF:en till en ren 102 × 192 mm-etikett för Zebra eller annan etikettskrivare.</p>
+    </div>
+    <div class="privacy-badge" title="PDF-filen lämnar aldrig din webbläsare">
+      <span aria-hidden="true">●</span> Allt sker lokalt
+    </div>
+  </header>
+
+  <main>
+    <section class="card upload-card">
+      <label id="dropZone" class="drop-zone" for="fileInput">
+        <input id="fileInput" type="file" accept="application/pdf,.pdf">
+        <span class="drop-icon" aria-hidden="true">PDF</span>
+        <strong>Välj eller släpp en fraktsedel här</strong>
+        <span>Endast den första PDF-sidan behandlas.</span>
+      </label>
+      <p id="fileInfo" class="file-info" hidden></p>
+    </section>
+
+    <section id="workspace" class="workspace" hidden>
+      <div class="card preview-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">1. Markera etiketten</p>
+            <h2>Original-PDF</h2>
+          </div>
+          <div class="toolbar">
+            <button id="presetButton" class="button secondary" type="button">Tradera/PostNord-preset</button>
+            <button id="resetButton" class="button ghost" type="button">Återställ</button>
+          </div>
+        </div>
+
+        <p class="instruction">Den blå rutan ska ligga <strong>innanför</strong> de prickade klippstrecken. Dra rutan eller handtagen för finjustering.</p>
+
+        <div id="previewViewport" class="preview-viewport">
+          <div id="pageStage" class="page-stage">
+            <canvas id="pdfCanvas" aria-label="Förhandsvisning av PDF"></canvas>
+            <div id="selection" class="selection" tabindex="0" aria-label="Beskärningsområde">
+              <span class="selection-label">Etikett</span>
+              <button class="handle nw" data-handle="nw" type="button" aria-label="Ändra övre vänstra hörnet"></button>
+              <button class="handle n" data-handle="n" type="button" aria-label="Ändra överkant"></button>
+              <button class="handle ne" data-handle="ne" type="button" aria-label="Ändra övre högra hörnet"></button>
+              <button class="handle e" data-handle="e" type="button" aria-label="Ändra högerkant"></button>
+              <button class="handle se" data-handle="se" type="button" aria-label="Ändra nedre högra hörnet"></button>
+              <button class="handle s" data-handle="s" type="button" aria-label="Ändra underkant"></button>
+              <button class="handle sw" data-handle="sw" type="button" aria-label="Ändra nedre vänstra hörnet"></button>
+              <button class="handle w" data-handle="w" type="button" aria-label="Ändra vänsterkant"></button>
+            </div>
+            <div id="shadeTop" class="shade shade-top"></div>
+            <div id="shadeRight" class="shade shade-right"></div>
+            <div id="shadeBottom" class="shade shade-bottom"></div>
+            <div id="shadeLeft" class="shade shade-left"></div>
+          </div>
+        </div>
+
+        <div class="crop-meta">
+          <span id="cropSize">Markering: –</span>
+          <span id="ratioStatus">Format: –</span>
+        </div>
+      </div>
+
+      <aside class="card settings-card">
+        <div class="card-header compact">
+          <div>
+            <p class="eyebrow">2. Skapa etiketten</p>
+            <h2>Inställningar</h2>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Bredd</span>
+            <span class="input-with-unit">
+              <input id="outputWidth" type="number" min="20" max="500" step="0.1" value="102">
+              <span>mm</span>
+            </span>
+          </label>
+          <label class="field">
+            <span>Höjd</span>
+            <span class="input-with-unit">
+              <input id="outputHeight" type="number" min="20" max="1000" step="0.1" value="192">
+              <span>mm</span>
+            </span>
+          </label>
+        </div>
+
+        <label class="check-row">
+          <input id="rotate180" type="checkbox" checked>
+          <span>
+            <strong>Rotera 180°</strong>
+            <small>Traderas PostNord-etikett ligger normalt upp och ned.</small>
+          </span>
+        </label>
+
+        <label class="check-row">
+          <input id="preserveAspect" type="checkbox" checked>
+          <span>
+            <strong>Behåll proportioner</strong>
+            <small>Centrerar etiketten utan att förvränga streckkoderna.</small>
+          </span>
+        </label>
+
+        <label class="field full-width">
+          <span>Filnamn</span>
+          <input id="outputFilename" type="text" value="fraktsedel-102x192.pdf" autocomplete="off">
+        </label>
+
+        <button id="createButton" class="button primary full-width" type="button">Skapa PDF</button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+
+        <div id="resultActions" class="result-actions" hidden>
+          <a id="downloadButton" class="button primary" download>Hämta PDF</a>
+          <button id="printButton" class="button secondary" type="button">Öppna för utskrift</button>
+        </div>
+
+        <div id="outputPreviewWrap" class="output-preview" hidden>
+          <p class="eyebrow">Resultat</p>
+          <iframe id="outputPreview" title="Förhandsvisning av beskuren fraktsedel"></iframe>
+        </div>
+      </aside>
+    </section>
+
+    <section class="card help-card">
+      <h2>Utskrift</h2>
+      <p>Välj <strong>102 × 192 mm</strong>, <strong>100 % / faktisk storlek</strong> och stäng av “Anpassa till sida”. PDF:en behåller originalets text och streckkoder som PDF-innehåll – den görs inte om till en skärmbild.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Ingen uppladdning. Ingen lagring. Appen körs helt i din webbläsare.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
