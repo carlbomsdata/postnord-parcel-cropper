@@ -39,6 +39,8 @@
     shadeBottom: document.getElementById("shadeBottom"),
     shadeLeft: document.getElementById("shadeLeft"),
     panelDownload: document.getElementById("panelDownload"),
+    resultPreview: document.getElementById("resultPreview"),
+    resultCanvas: document.getElementById("resultCanvas"),
     rotateLeftButton: document.getElementById("rotateLeftButton"),
     rotateRightButton: document.getElementById("rotateRightButton"),
     resetButton: document.getElementById("resetButton"),
@@ -60,6 +62,7 @@
     userRotation: 0,
     selection: { ...PRESET },
     generatedUrl: null,
+    resultDoc: null,
     pointerSession: null,
     resizeTimer: null,
     isRendering: false,
@@ -158,6 +161,7 @@
 
     setStatus("");
     if (s === 2) renderPage();
+    else if (s === 3) showResult();
   }
 
   function goNext() {
@@ -387,113 +391,143 @@
 
   // --- Export ----------------------------------------------------------------
 
-  async function createAndDownload() {
+  async function buildOutputBytes() {
+    const { PDFDocument, degrees } = PDFLib;
+    const sourcePdf = await PDFDocument.load(state.sourceBytes.slice());
+    const sourcePage = sourcePdf.getPage(0);
+    const sourceWidth = sourcePage.getWidth();
+    const sourceHeight = sourcePage.getHeight();
+
+    // Mappa markeringen (i den visade, roterade bilden) tillbaka till källsidans
+    // oroterade koordinatrum, så att beskärningen blir rätt oavsett rotation.
+    const rotation = totalRotation();
+    const sel = state.selection;
+    const corners = [
+      [sel.x, sel.y],
+      [sel.x + sel.width, sel.y],
+      [sel.x, sel.y + sel.height],
+      [sel.x + sel.width, sel.y + sel.height]
+    ].map(([nx, ny]) => mapDisplayToSource(nx, ny, rotation));
+
+    const us = corners.map(p => p.u);
+    const vs = corners.map(p => p.v);
+    const left = Math.min(...us) * sourceWidth;
+    const right = Math.max(...us) * sourceWidth;
+    const top = (1 - Math.min(...vs)) * sourceHeight;
+    const bottom = (1 - Math.max(...vs)) * sourceHeight;
+
+    const outputPdf = await PDFDocument.create();
+    const embeddedPage = await outputPdf.embedPage(sourcePage, { left, bottom, right, top });
+
+    const embedWidth = right - left;
+    const embedHeight = top - bottom;
+    const swapped = rotation === 90 || rotation === 270;
+    const displayWidth = swapped ? embedHeight : embedWidth;
+    const displayHeight = swapped ? embedWidth : embedHeight;
+
+    const outputWidth = mmToPoints(OUTPUT_WIDTH_MM);
+    const outputHeight = mmToPoints(OUTPUT_HEIGHT_MM);
+    const outputPage = outputPdf.addPage([outputWidth, outputHeight]);
+
+    // Centrera med bibehållna proportioner (ingen förvrängning av streckkoder).
+    const scale = Math.min(outputWidth / displayWidth, outputHeight / displayHeight);
+    const fitWidth = displayWidth * scale;
+    const fitHeight = displayHeight * scale;
+    const offsetX = (outputWidth - fitWidth) / 2;
+    const offsetY = (outputHeight - fitHeight) / 2;
+
+    // Placera det källorienterade utsnittet roterat exakt som i förhandsvisningen.
+    // pdf-lib roterar moturs för positiva grader.
+    let drawWidth;
+    let drawHeight;
+    let drawX;
+    let drawY;
+    let angle;
+    switch (rotation) {
+      case 90:
+        drawWidth = fitHeight; drawHeight = fitWidth;
+        drawX = offsetX; drawY = offsetY + fitHeight; angle = -90;
+        break;
+      case 180:
+        drawWidth = fitWidth; drawHeight = fitHeight;
+        drawX = offsetX + fitWidth; drawY = offsetY + fitHeight; angle = 180;
+        break;
+      case 270:
+        drawWidth = fitHeight; drawHeight = fitWidth;
+        drawX = offsetX + fitWidth; drawY = offsetY; angle = 90;
+        break;
+      default:
+        drawWidth = fitWidth; drawHeight = fitHeight;
+        drawX = offsetX; drawY = offsetY; angle = 0;
+    }
+
+    outputPage.drawPage(embeddedPage, {
+      x: drawX,
+      y: drawY,
+      width: drawWidth,
+      height: drawHeight,
+      rotate: degrees(angle)
+    });
+
+    outputPdf.setTitle("Beskuren fraktsedel");
+    outputPdf.setProducer("Fraktsedelsklippare - client-side");
+    outputPdf.setCreator("Fraktsedelsklippare");
+
+    return outputPdf.save({ useObjectStreams: false });
+  }
+
+  // Steg 3: bygg den färdiga etiketten och visa den riktiga utdata-PDF:en.
+  async function showResult() {
     if (!state.sourceBytes) return;
-
-    el.downloadButton.disabled = true;
     setStatus("Skapar etikett…");
-
     try {
-      const { PDFDocument, degrees } = PDFLib;
-      const sourcePdf = await PDFDocument.load(state.sourceBytes.slice());
-      const sourcePage = sourcePdf.getPage(0);
-      const sourceWidth = sourcePage.getWidth();
-      const sourceHeight = sourcePage.getHeight();
-
-      // Mappa markeringen (i den visade, roterade bilden) tillbaka till källsidans
-      // oroterade koordinatrum, så att beskärningen blir rätt oavsett rotation.
-      const rotation = totalRotation();
-      const sel = state.selection;
-      const corners = [
-        [sel.x, sel.y],
-        [sel.x + sel.width, sel.y],
-        [sel.x, sel.y + sel.height],
-        [sel.x + sel.width, sel.y + sel.height]
-      ].map(([nx, ny]) => mapDisplayToSource(nx, ny, rotation));
-
-      const us = corners.map(p => p.u);
-      const vs = corners.map(p => p.v);
-      const left = Math.min(...us) * sourceWidth;
-      const right = Math.max(...us) * sourceWidth;
-      const top = (1 - Math.min(...vs)) * sourceHeight;
-      const bottom = (1 - Math.max(...vs)) * sourceHeight;
-
-      const outputPdf = await PDFDocument.create();
-      const embeddedPage = await outputPdf.embedPage(sourcePage, { left, bottom, right, top });
-
-      const embedWidth = right - left;
-      const embedHeight = top - bottom;
-      const swapped = rotation === 90 || rotation === 270;
-      const displayWidth = swapped ? embedHeight : embedWidth;
-      const displayHeight = swapped ? embedWidth : embedHeight;
-
-      const outputWidth = mmToPoints(OUTPUT_WIDTH_MM);
-      const outputHeight = mmToPoints(OUTPUT_HEIGHT_MM);
-      const outputPage = outputPdf.addPage([outputWidth, outputHeight]);
-
-      // Centrera med bibehållna proportioner (ingen förvrängning av streckkoder).
-      const scale = Math.min(outputWidth / displayWidth, outputHeight / displayHeight);
-      const fitWidth = displayWidth * scale;
-      const fitHeight = displayHeight * scale;
-      const offsetX = (outputWidth - fitWidth) / 2;
-      const offsetY = (outputHeight - fitHeight) / 2;
-
-      // Placera det källorienterade utsnittet roterat exakt som i förhandsvisningen.
-      // pdf-lib roterar moturs för positiva grader.
-      let drawWidth;
-      let drawHeight;
-      let drawX;
-      let drawY;
-      let angle;
-      switch (rotation) {
-        case 90:
-          drawWidth = fitHeight; drawHeight = fitWidth;
-          drawX = offsetX; drawY = offsetY + fitHeight; angle = -90;
-          break;
-        case 180:
-          drawWidth = fitWidth; drawHeight = fitHeight;
-          drawX = offsetX + fitWidth; drawY = offsetY + fitHeight; angle = 180;
-          break;
-        case 270:
-          drawWidth = fitHeight; drawHeight = fitWidth;
-          drawX = offsetX + fitWidth; drawY = offsetY; angle = 90;
-          break;
-        default:
-          drawWidth = fitWidth; drawHeight = fitHeight;
-          drawX = offsetX; drawY = offsetY; angle = 0;
-      }
-
-      outputPage.drawPage(embeddedPage, {
-        x: drawX,
-        y: drawY,
-        width: drawWidth,
-        height: drawHeight,
-        rotate: degrees(angle)
-      });
-
-      outputPdf.setTitle("Beskuren fraktsedel");
-      outputPdf.setProducer("Fraktsedelsklippare - client-side");
-      outputPdf.setCreator("Fraktsedelsklippare");
-
-      const pdfBytes = await outputPdf.save({ useObjectStreams: false });
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const bytes = await buildOutputBytes();
       revokeGeneratedUrl();
-      state.generatedUrl = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = state.generatedUrl;
-      link.download = outputFilename();
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      setStatus("Etikett nedladdad.", "success");
+      state.generatedUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      await renderResult(bytes);
+      setStatus("");
     } catch (error) {
       console.error(error);
-      setStatus("Kunde inte skapa etiketten. Ladda om sidan och försök igen.", "error");
-    } finally {
-      el.downloadButton.disabled = false;
+      setStatus("Kunde inte skapa etiketten. Gå tillbaka och försök igen.", "error");
     }
+  }
+
+  async function renderResult(bytes) {
+    if (state.resultDoc) {
+      try { state.resultDoc.destroy(); } catch (_) { /* no-op */ }
+      state.resultDoc = null;
+    }
+
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    state.resultDoc = doc;
+    const page = await doc.getPage(1);
+
+    const base = page.getViewport({ scale: 1 });
+    const availableWidth = Math.max(200, Math.min(360, el.resultPreview.clientWidth - 28));
+    const availableHeight = Math.max(280, window.innerHeight - 300);
+    const cssScale = Math.min(availableWidth / base.width, availableHeight / base.height);
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const cssViewport = page.getViewport({ scale: cssScale });
+    const renderViewport = page.getViewport({ scale: cssScale * pixelRatio });
+
+    el.resultCanvas.style.width = `${cssViewport.width}px`;
+    el.resultCanvas.style.height = `${cssViewport.height}px`;
+    el.resultCanvas.width = Math.ceil(renderViewport.width);
+    el.resultCanvas.height = Math.ceil(renderViewport.height);
+    await page.render({ canvasContext: el.resultCanvas.getContext("2d", { alpha: false }), viewport: renderViewport }).promise;
+  }
+
+  async function downloadResult() {
+    if (!state.generatedUrl) await showResult();
+    if (!state.generatedUrl) return;
+
+    const link = document.createElement("a");
+    link.href = state.generatedUrl;
+    link.download = outputFilename();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setStatus("Etikett nedladdad.", "success");
   }
 
   // --- Händelser -------------------------------------------------------------
@@ -519,7 +553,7 @@
   el.rotateLeftButton.addEventListener("click", () => rotate(-90));
   el.rotateRightButton.addEventListener("click", () => rotate(90));
   el.resetButton.addEventListener("click", resetSelection);
-  el.downloadButton.addEventListener("click", createAndDownload);
+  el.downloadButton.addEventListener("click", downloadResult);
   el.newFileButton.addEventListener("click", () => el.fileInput.click());
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", goNext);

@@ -53,8 +53,11 @@
       </div>
     </section>
 
-    <section id="panelDownload" class="panel controls" hidden>
-      <p class="instruction">Klart. Ladda ner och skriv ut i 100 % / faktisk storlek på 104,4 × 187,8 mm.</p>
+    <section id="panelDownload" class="panel" hidden>
+      <div id="resultPreview" class="viewport result">
+        <canvas id="resultCanvas" aria-label="Färdig etikett"></canvas>
+      </div>
+      <p class="instruction">Skriv ut i <strong>100 %</strong> / faktisk storlek på 104,4 × 187,8 mm.</p>
       <div class="toolbar">
         <button id="downloadButton" class="primary" type="button">Ladda ner etikett</button>
         <button id="newFileButton" type="button">Ny fil</button>
