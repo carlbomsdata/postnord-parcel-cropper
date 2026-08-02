@@ -69,7 +69,7 @@ main {
 .steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 .nav { justify-self: end; display: flex; gap: 8px; }
-.nav .primary { min-width: 120px; }
+.nav button { min-width: 120px; }
 
 /* Knappar */
 button {
@@ -204,7 +204,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   main { padding: 12px 14px 14px; }
   .brand { display: none; }
   .steps { font-size: 0.72rem; gap: 4px 8px; }
-  .nav .primary { min-width: 96px; }
+  .nav button { min-width: 96px; }
   .viewport { padding: 8px; }
 }
 
