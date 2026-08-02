@@ -90,16 +90,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Paneler fyller den lediga ytan */
 .panel { flex: 1; min-height: 0; }
-#panelUpload { display: flex; }
+#panelUpload { flex: 0 0 auto; }
 #panelEdit { position: relative; display: flex; }
 #panelDownload { display: flex; }
 
 .drop {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
+  min-height: 220px;
   padding: 24px;
   border: 1.5px dashed var(--line);
   border-radius: 14px;
