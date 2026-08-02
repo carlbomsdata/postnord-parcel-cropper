@@ -29,18 +29,18 @@ main {
 
 /* Topbar: titel + steg + navigering på en rad */
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px 20px;
 }
-.brand { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+.brand { justify-self: start; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
 
 .steps {
   counter-reset: step;
+  justify-self: center;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px 16px;
   margin: 0;
   padding: 0;
@@ -48,7 +48,7 @@ main {
   color: var(--muted);
   font-size: 0.85rem;
 }
-.steps li { counter-increment: step; display: flex; align-items: center; gap: 7px; }
+.steps li { counter-increment: step; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
 .steps li::before {
   content: counter(step);
   display: grid;
@@ -60,7 +60,7 @@ main {
   font-size: 0.76rem;
   font-weight: 600;
 }
-.steps li.active { color: var(--fg); font-weight: 600; }
+.steps li.active { color: var(--fg); }
 .steps li.active::before { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 .steps li.done::before { border-color: var(--fg); color: var(--fg); }
 .steps li.clickable { cursor: pointer; }
@@ -68,7 +68,8 @@ main {
 .steps li.clickable:hover::before { border-color: var(--fg); }
 .steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
-.nav { display: flex; gap: 8px; }
+.nav { justify-self: end; display: flex; gap: 8px; }
+.nav .primary { min-width: 120px; }
 
 /* Knappar */
 button {
@@ -114,12 +115,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   flex: 1;
   min-height: 0;
   display: flex;
-  overflow: auto;
+  overflow: hidden;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--panel);
 }
+/* Scroll bara när man zoomat in – aldrig vid fit */
+.viewport.zoomed { overflow: auto; }
 .stage {
   position: relative;
   margin: auto;
@@ -200,6 +203,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 @media (max-width: 600px) {
   main { padding: 12px 14px 14px; }
   .brand { display: none; }
+  .steps { font-size: 0.72rem; gap: 4px 8px; }
+  .nav .primary { min-width: 96px; }
   .viewport { padding: 8px; }
 }
 

@@ -46,7 +46,6 @@
     resetButton: document.getElementById("resetButton"),
     zoomInButton: document.getElementById("zoomInButton"),
     zoomOutButton: document.getElementById("zoomOutButton"),
-    downloadButton: document.getElementById("downloadButton"),
     backButton: document.getElementById("backButton"),
     nextButton: document.getElementById("nextButton"),
     nav: document.querySelector(".nav")
@@ -159,10 +158,9 @@
 
     el.backButton.hidden = s === 1;
     el.backButton.textContent = "Tillbaka";
-    el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2);
-    el.nextButton.textContent = s === 1 ? "Fortsätt" : "Nästa";
-    el.downloadButton.hidden = s !== 3;
-    el.nav.hidden = el.backButton.hidden && el.nextButton.hidden && el.downloadButton.hidden;
+    el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2 || s === 3);
+    el.nextButton.textContent = s === 1 ? "Fortsätt" : s === 3 ? "Ladda ner" : "Nästa";
+    el.nav.hidden = el.backButton.hidden && el.nextButton.hidden;
 
     setStatus("");
     if (s === 2) renderPage();
@@ -175,6 +173,11 @@
 
   function goBack() {
     goToStep(state.step - 1);
+  }
+
+  function primaryAction() {
+    if (state.step === 3) downloadResult();
+    else goNext();
   }
 
   // --- Inläsning & rendering -------------------------------------------------
@@ -229,6 +232,7 @@
       const availableHeight = Math.max(240, el.preview.clientHeight - 28);
       const fitScale = Math.min(availableWidth / scaleViewport.width, availableHeight / scaleViewport.height);
       const cssScale = fitScale * state.zoom;
+      el.preview.classList.toggle("zoomed", state.zoom > 1.001);
       const cssViewport = state.pdfPage.getViewport({ scale: cssScale, rotation });
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       const renderViewport = state.pdfPage.getViewport({ scale: cssScale * pixelRatio, rotation });
@@ -499,7 +503,7 @@
       revokeGeneratedUrl();
       state.generatedUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       await renderResult(bytes);
-      setStatus("Skriv ut i faktisk storlek – ingen skalning.");
+      setStatus("");
     } catch (error) {
       console.error(error);
       setStatus("Kunde inte skapa etiketten. Gå tillbaka och försök igen.", "error");
@@ -569,9 +573,8 @@
   el.zoomInButton.addEventListener("click", () => applyZoom(1.25));
   el.zoomOutButton.addEventListener("click", () => applyZoom(0.8));
   el.resetButton.addEventListener("click", resetSelection);
-  el.downloadButton.addEventListener("click", downloadResult);
   el.backButton.addEventListener("click", goBack);
-  el.nextButton.addEventListener("click", goNext);
+  el.nextButton.addEventListener("click", primaryAction);
 
   el.stepEls.forEach((li, index) => {
     const target = index + 1;
