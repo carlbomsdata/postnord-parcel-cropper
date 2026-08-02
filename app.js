@@ -159,7 +159,7 @@
     el.backButton.hidden = s === 1;
     el.backButton.textContent = "Tillbaka";
     el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2 || s === 3);
-    el.nextButton.textContent = s === 1 ? "Fortsätt" : s === 3 ? "Ladda ner" : "Nästa";
+    el.nextButton.textContent = s === 1 ? "Fortsätt" : s === 3 ? "Hämta" : "Nästa";
     el.nav.hidden = el.backButton.hidden && el.nextButton.hidden;
 
     setStatus("");
