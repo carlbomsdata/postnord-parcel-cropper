@@ -67,6 +67,10 @@ h1 {
 .steps li.active { color: var(--fg); font-weight: 600; }
 .steps li.active::before { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 .steps li.done::before { border-color: var(--fg); color: var(--fg); }
+.steps li.clickable { cursor: pointer; }
+.steps li.clickable:hover { color: var(--fg); }
+.steps li.clickable:hover::before { border-color: var(--fg); }
+.steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 .panel { margin: 0; }
 .controls { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }

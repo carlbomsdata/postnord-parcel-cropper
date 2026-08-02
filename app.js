@@ -135,8 +135,17 @@
 
     el.stepEls.forEach((li, index) => {
       const stepNumber = index + 1;
+      const reachable = stepNumber === 1 || !!state.pdfPage;
       li.classList.toggle("active", stepNumber === s);
       li.classList.toggle("done", stepNumber < s);
+      li.classList.toggle("clickable", reachable);
+      if (reachable) {
+        li.setAttribute("role", "button");
+        li.setAttribute("tabindex", "0");
+      } else {
+        li.removeAttribute("role");
+        li.removeAttribute("tabindex");
+      }
     });
 
     el.panelUpload.hidden = s !== 1;
@@ -518,6 +527,18 @@
   el.newFileButton.addEventListener("click", () => el.fileInput.click());
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", goNext);
+
+  el.stepEls.forEach((li, index) => {
+    const target = index + 1;
+    const activate = () => { if (target === 1 || state.pdfPage) goToStep(target); };
+    li.addEventListener("click", activate);
+    li.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        activate();
+      }
+    });
+  });
 
   window.addEventListener("resize", () => {
     clearTimeout(state.resizeTimer);
