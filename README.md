@@ -1,6 +1,6 @@
 # postnord-parcel-cropper
 
-En statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **102 × 192 mm**, redo för Zebra eller annan etikettskrivare.
+En statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **104,4 × 187,8 mm**, redo för Zebra eller annan etikettskrivare.
 
 **Live:** https://carlboms-data-ab.github.io/postnord-parcel-cropper/
 
@@ -8,17 +8,20 @@ En statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren
 
 - All behandling sker lokalt i webbläsaren – PDF:en laddas aldrig upp till någon server.
 - Text och streckkoder behålls som vektor-PDF via `pdf-lib` (görs inte om till en skärmbild).
-- Förhandsvisning och manuell beskärning med PDF.js – dra rutan, dra i handtagen eller finjustera med piltangenterna.
-- Preset som lägger beskärningsrutan innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
-- Justerbar utdatastorlek, rotering 180° och bibehållna proportioner (centrerad utan förvrängning).
+- Allt görs i ett steg: **rotera** i 90°-steg och **markera** etiketten direkt i förhandsvisningen.
+- Förhandsvisningen är WYSIWYG – det du ser efter rotation är exakt det som exporteras.
+- Preset som vänder etiketten rätt och lägger rutan innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
 
 ## Användning
 
 1. Öppna [appen](https://carlboms-data-ab.github.io/postnord-parcel-cropper/) och välj eller släpp PDF-filen från Tradera. Endast första sidan behandlas.
-2. Klicka på **Tradera/PostNord-preset**.
-3. Kontrollera att den blå rutan ligger innanför de prickade klippstrecken. Justera vid behov.
-4. Klicka **Skapa PDF** och hämta filen.
-5. Skriv ut i **100 % / faktisk storlek** på **102 × 192 mm** med ”Anpassa till sida” avstängt.
+2. Appen roterar och markerar automatiskt med presetet. Justera vid behov:
+   - **⟲ Vänster / Höger ⟳** roterar i 90°-steg.
+   - Dra den blå rutan eller handtagen, eller använd piltangenterna, så att den ligger innanför de prickade klippstrecken.
+3. Klicka **Skapa PDF-etikett** och hämta filen.
+4. Skriv ut i **100 % / faktisk storlek** på **104,4 × 187,8 mm** med ”Anpassa till sida” avstängt.
+
+Storlek, proportioner och filnamn kan ändras under **Avancerat**.
 
 ## Köra lokalt
 

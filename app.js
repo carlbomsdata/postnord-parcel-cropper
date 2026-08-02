@@ -2,6 +2,15 @@
 (() => {
   "use strict";
 
+  if (typeof pdfjsLib === "undefined" || typeof PDFLib === "undefined") {
+    const status = document.getElementById("status");
+    if (status) {
+      status.textContent = "Kunde inte ladda nödvändiga bibliotek. Kontrollera din internetanslutning och ladda om sidan.";
+      status.className = "status error";
+    }
+    return;
+  }
+
   const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
 
@@ -22,9 +31,10 @@
     ratioStatus: document.getElementById("ratioStatus"),
     presetButton: document.getElementById("presetButton"),
     resetButton: document.getElementById("resetButton"),
+    rotateLeftButton: document.getElementById("rotateLeftButton"),
+    rotateRightButton: document.getElementById("rotateRightButton"),
     outputWidth: document.getElementById("outputWidth"),
     outputHeight: document.getElementById("outputHeight"),
-    rotate180: document.getElementById("rotate180"),
     preserveAspect: document.getElementById("preserveAspect"),
     outputFilename: document.getElementById("outputFilename"),
     createButton: document.getElementById("createButton"),
@@ -36,6 +46,14 @@
     outputPreview: document.getElementById("outputPreview")
   };
 
+  const DEFAULT_WIDTH_MM = 104.4;
+  const DEFAULT_HEIGHT_MM = 187.8;
+
+  // Beskärningsområdet innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
+  const PRESET = Object.freeze({ x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 });
+  const DEFAULT_SELECTION = Object.freeze({ x: 0.08, y: 0.12, width: 0.45, height: 0.65 });
+  const MIN_SELECTION_PX = 30;
+
   const state = {
     file: null,
     sourceBytes: null,
@@ -45,23 +63,50 @@
     pdfHeight: 0,
     stageWidth: 0,
     stageHeight: 0,
-    selection: { x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 },
+    baseRotation: 0,
+    userRotation: 0,
+    selection: { ...PRESET },
     generatedUrl: null,
     pointerSession: null,
-    resizeTimer: null
+    resizeTimer: null,
+    isRendering: false,
+    renderQueued: false
   };
 
-  const PRESET = Object.freeze({ x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 });
-  const DEFAULT_SELECTION = Object.freeze({ x: 0.08, y: 0.12, width: 0.45, height: 0.65 });
-  const MIN_SELECTION_PX = 30;
-
   function cloneSelection(selection) {
-    return {
-      x: selection.x,
-      y: selection.y,
-      width: selection.width,
-      height: selection.height
-    };
+    return { x: selection.x, y: selection.y, width: selection.width, height: selection.height };
+  }
+
+  function normalizeAngle(angle) {
+    return ((angle % 360) + 360) % 360;
+  }
+
+  function totalRotation() {
+    return normalizeAngle(state.baseRotation + state.userRotation);
+  }
+
+  // Rotera en normaliserad markering (y nedåt) tillsammans med innehållet.
+  function rotateSelectionCW(s) {
+    return { x: 1 - s.y - s.height, y: s.x, width: s.height, height: s.width };
+  }
+
+  function rotateSelectionCCW(s) {
+    return { x: s.y, y: 1 - s.x - s.width, width: s.height, height: s.width };
+  }
+
+  function rotateSelection180(s) {
+    return { x: 1 - s.x - s.width, y: 1 - s.y - s.height, width: s.width, height: s.height };
+  }
+
+  // Mappa en punkt i den visade (roterade) bilden till källsidans normaliserade
+  // koordinater (u = vänster→höger, v = topp→botten).
+  function mapDisplayToSource(nx, ny, angle) {
+    switch (angle) {
+      case 90: return { u: ny, v: 1 - nx };
+      case 180: return { u: 1 - nx, v: 1 - ny };
+      case 270: return { u: 1 - ny, v: nx };
+      default: return { u: nx, v: ny };
+    }
   }
 
   function clamp(value, min, max) {
@@ -77,7 +122,7 @@
   }
 
   function normalizeFilename(filename) {
-    const value = (filename || "fraktsedel-102x192.pdf").trim();
+    const value = (filename || "fraktsedel-etikett.pdf").trim();
     const safe = value.replace(/[\\/:*?"<>|]+/g, "-");
     return safe.toLowerCase().endsWith(".pdf") ? safe : `${safe}.pdf`;
   }
@@ -108,23 +153,31 @@
     elements.createButton.disabled = true;
 
     try {
-      state.file = file;
-      state.sourceBytes = new Uint8Array(await file.arrayBuffer());
-      state.pdfDocument = await pdfjsLib.getDocument({ data: state.sourceBytes.slice() }).promise;
-      state.pdfPage = await state.pdfDocument.getPage(1);
+      // Läs in i lokala variabler och byt state först när allt lyckats, så att
+      // ett misslyckande inte lämnar appen i ett inkonsekvent läge.
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const pdfDocument = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      const pdfPage = await pdfDocument.getPage(1);
 
-      const viewport = state.pdfPage.getViewport({ scale: 1 });
-      state.pdfWidth = viewport.width;
-      state.pdfHeight = viewport.height;
-      state.selection = cloneSelection(PRESET);
+      if (state.pdfDocument) {
+        try { state.pdfDocument.destroy(); } catch (_) { /* no-op */ }
+      }
+
+      state.file = file;
+      state.sourceBytes = bytes;
+      state.pdfDocument = pdfDocument;
+      state.pdfPage = pdfPage;
+      state.baseRotation = normalizeAngle(pdfPage.rotate || 0);
+      state.userRotation = 180;
+      state.selection = rotateSelection180(PRESET);
 
       elements.fileInfo.hidden = false;
-      elements.fileInfo.textContent = `${file.name} • ${state.pdfDocument.numPages} sida${state.pdfDocument.numPages === 1 ? "" : "or"}`;
+      elements.fileInfo.textContent = `${file.name} • ${pdfDocument.numPages} sida${pdfDocument.numPages === 1 ? "" : "or"}`;
       elements.workspace.hidden = false;
-      elements.outputFilename.value = `${file.name.replace(/\.pdf$/i, "")}-102x192.pdf`;
+      elements.outputFilename.value = `${file.name.replace(/\.pdf$/i, "")}-etikett.pdf`;
 
       await renderPage();
-      setStatus("PDF laddad. Kontrollera markeringen och skapa etiketten.");
+      setStatus("Rotera och markera etiketten, skapa sedan PDF:en.");
     } catch (error) {
       console.error(error);
       setStatus("PDF-filen kunde inte läsas. Kontrollera att den inte är lösenordsskyddad.", "error");
@@ -135,27 +188,44 @@
 
   async function renderPage() {
     if (!state.pdfPage) return;
+    if (state.isRendering) {
+      state.renderQueued = true;
+      return;
+    }
+    state.isRendering = true;
 
-    const availableWidth = Math.max(280, Math.min(950, elements.previewViewport.clientWidth - 30));
-    const baseViewport = state.pdfPage.getViewport({ scale: 1 });
-    const cssScale = availableWidth / baseViewport.width;
-    const cssViewport = state.pdfPage.getViewport({ scale: cssScale });
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-    const renderViewport = state.pdfPage.getViewport({ scale: cssScale * pixelRatio });
+    try {
+      const rotation = totalRotation();
+      const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
+      state.pdfWidth = scaleViewport.width;
+      state.pdfHeight = scaleViewport.height;
 
-    state.stageWidth = cssViewport.width;
-    state.stageHeight = cssViewport.height;
+      const availableWidth = Math.max(280, Math.min(950, elements.previewViewport.clientWidth - 30));
+      const cssScale = availableWidth / scaleViewport.width;
+      const cssViewport = state.pdfPage.getViewport({ scale: cssScale, rotation });
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const renderViewport = state.pdfPage.getViewport({ scale: cssScale * pixelRatio, rotation });
 
-    elements.pageStage.style.width = `${state.stageWidth}px`;
-    elements.pageStage.style.height = `${state.stageHeight}px`;
-    elements.canvas.style.width = `${state.stageWidth}px`;
-    elements.canvas.style.height = `${state.stageHeight}px`;
-    elements.canvas.width = Math.ceil(renderViewport.width);
-    elements.canvas.height = Math.ceil(renderViewport.height);
+      state.stageWidth = cssViewport.width;
+      state.stageHeight = cssViewport.height;
 
-    const context = elements.canvas.getContext("2d", { alpha: false });
-    await state.pdfPage.render({ canvasContext: context, viewport: renderViewport }).promise;
-    updateSelectionUi();
+      elements.pageStage.style.width = `${state.stageWidth}px`;
+      elements.pageStage.style.height = `${state.stageHeight}px`;
+      elements.canvas.style.width = `${state.stageWidth}px`;
+      elements.canvas.style.height = `${state.stageHeight}px`;
+      elements.canvas.width = Math.ceil(renderViewport.width);
+      elements.canvas.height = Math.ceil(renderViewport.height);
+
+      const context = elements.canvas.getContext("2d", { alpha: false });
+      await state.pdfPage.render({ canvasContext: context, viewport: renderViewport }).promise;
+      updateSelectionUi();
+    } finally {
+      state.isRendering = false;
+      if (state.renderQueued) {
+        state.renderQueued = false;
+        renderPage();
+      }
+    }
   }
 
   function getSelectionPixels() {
@@ -225,8 +295,8 @@
     const cropHeightMm = pointsToMm(cropHeightPt);
     elements.cropSize.textContent = `Markering: ${cropWidthMm.toFixed(1)} × ${cropHeightMm.toFixed(1)} mm i originalet`;
 
-    const outputWidth = Number(elements.outputWidth.value) || 102;
-    const outputHeight = Number(elements.outputHeight.value) || 192;
+    const outputWidth = Number(elements.outputWidth.value) || DEFAULT_WIDTH_MM;
+    const outputHeight = Number(elements.outputHeight.value) || DEFAULT_HEIGHT_MM;
     const cropRatio = cropWidthPt / cropHeightPt;
     const outputRatio = outputWidth / outputHeight;
     const difference = Math.abs(cropRatio / outputRatio - 1) * 100;
@@ -238,17 +308,32 @@
   }
 
   function applyPreset() {
-    state.selection = cloneSelection(PRESET);
-    updateSelectionUi();
+    if (!state.pdfPage) return;
+    state.userRotation = 180;
+    state.selection = rotateSelection180(PRESET);
+    renderPage();
     revokeGeneratedUrl();
-    setStatus("Preset tillämpad. Rutan ligger innanför klippstrecken för den aktuella Tradera/PostNord-mallen.");
+    setStatus("Preset tillämpad – etiketten vänds rätt och rutan ligger innanför klippstrecken.");
   }
 
   function resetSelection() {
+    if (!state.pdfPage) return;
+    state.userRotation = 0;
     state.selection = cloneSelection(DEFAULT_SELECTION);
-    updateSelectionUi();
+    renderPage();
     revokeGeneratedUrl();
-    setStatus("Markeringen återställd.");
+    setStatus("Markering och rotation återställda.");
+  }
+
+  function rotate(direction) {
+    if (!state.pdfPage) return;
+    state.userRotation = normalizeAngle(state.userRotation + direction);
+    state.selection = direction > 0
+      ? rotateSelectionCW(state.selection)
+      : rotateSelectionCCW(state.selection);
+    renderPage();
+    revokeGeneratedUrl();
+    setStatus(`Roterad till ${totalRotation()}°.`);
   }
 
   function beginPointerSession(event) {
@@ -342,41 +427,88 @@
       const sourceWidth = sourcePage.getWidth();
       const sourceHeight = sourcePage.getHeight();
 
-      const left = state.selection.x * sourceWidth;
-      const right = (state.selection.x + state.selection.width) * sourceWidth;
-      const top = sourceHeight - state.selection.y * sourceHeight;
-      const bottom = sourceHeight - (state.selection.y + state.selection.height) * sourceHeight;
+      // Mappa markeringen (i den visade, roterade bilden) tillbaka till källsidans
+      // oroterade koordinatrum, så att beskärningen blir rätt oavsett rotation.
+      const rotation = totalRotation();
+      const sel = state.selection;
+      const corners = [
+        [sel.x, sel.y],
+        [sel.x + sel.width, sel.y],
+        [sel.x, sel.y + sel.height],
+        [sel.x + sel.width, sel.y + sel.height]
+      ].map(([nx, ny]) => mapDisplayToSource(nx, ny, rotation));
+
+      const us = corners.map(p => p.u);
+      const vs = corners.map(p => p.v);
+      const left = Math.min(...us) * sourceWidth;
+      const right = Math.max(...us) * sourceWidth;
+      const top = (1 - Math.min(...vs)) * sourceHeight;
+      const bottom = (1 - Math.max(...vs)) * sourceHeight;
 
       const outputPdf = await PDFDocument.create();
       const embeddedPage = await outputPdf.embedPage(sourcePage, { left, bottom, right, top });
+
+      const embedWidth = right - left;
+      const embedHeight = top - bottom;
+      const swapped = rotation === 90 || rotation === 270;
+      const displayWidth = swapped ? embedHeight : embedWidth;
+      const displayHeight = swapped ? embedWidth : embedHeight;
+
       const outputWidth = mmToPoints(outputWidthMm);
       const outputHeight = mmToPoints(outputHeightMm);
       const outputPage = outputPdf.addPage([outputWidth, outputHeight]);
 
-      const cropWidth = right - left;
-      const cropHeight = top - bottom;
-      let drawWidth = outputWidth;
-      let drawHeight = outputHeight;
-      let x = 0;
-      let y = 0;
-
+      let fitWidth = outputWidth;
+      let fitHeight = outputHeight;
+      let offsetX = 0;
+      let offsetY = 0;
       if (elements.preserveAspect.checked) {
-        const scale = Math.min(outputWidth / cropWidth, outputHeight / cropHeight);
-        drawWidth = cropWidth * scale;
-        drawHeight = cropHeight * scale;
-        x = (outputWidth - drawWidth) / 2;
-        y = (outputHeight - drawHeight) / 2;
+        const scale = Math.min(outputWidth / displayWidth, outputHeight / displayHeight);
+        fitWidth = displayWidth * scale;
+        fitHeight = displayHeight * scale;
+        offsetX = (outputWidth - fitWidth) / 2;
+        offsetY = (outputHeight - fitHeight) / 2;
       }
 
-      outputPage.drawPage(embeddedPage, { x, y, width: drawWidth, height: drawHeight });
-      if (elements.rotate180.checked) outputPage.setRotation(degrees(180));
+      // Placera det (källorienterade) utsnittet så att det visas roterat exakt som
+      // i förhandsvisningen. pdf-lib roterar moturs för positiva grader.
+      let drawWidth;
+      let drawHeight;
+      let drawX;
+      let drawY;
+      let angle;
+      switch (rotation) {
+        case 90:
+          drawWidth = fitHeight; drawHeight = fitWidth;
+          drawX = offsetX; drawY = offsetY + fitHeight; angle = -90;
+          break;
+        case 180:
+          drawWidth = fitWidth; drawHeight = fitHeight;
+          drawX = offsetX + fitWidth; drawY = offsetY + fitHeight; angle = 180;
+          break;
+        case 270:
+          drawWidth = fitHeight; drawHeight = fitWidth;
+          drawX = offsetX + fitWidth; drawY = offsetY; angle = 90;
+          break;
+        default:
+          drawWidth = fitWidth; drawHeight = fitHeight;
+          drawX = offsetX; drawY = offsetY; angle = 0;
+      }
+
+      outputPage.drawPage(embeddedPage, {
+        x: drawX,
+        y: drawY,
+        width: drawWidth,
+        height: drawHeight,
+        rotate: degrees(angle)
+      });
 
       outputPdf.setTitle("Beskuren fraktsedel");
       outputPdf.setProducer("Fraktsedelsklippare - client-side");
       outputPdf.setCreator("Fraktsedelsklippare");
 
-      const bytes = await outputPdf.save({ useObjectStreams: false });
-      const blob = new Blob([bytes], { type: "application/pdf" });
+      const pdfBytes = await outputPdf.save({ useObjectStreams: false });
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
       state.generatedUrl = URL.createObjectURL(blob);
 
       const filename = normalizeFilename(elements.outputFilename.value);
@@ -421,11 +553,12 @@
 
   elements.presetButton.addEventListener("click", applyPreset);
   elements.resetButton.addEventListener("click", resetSelection);
+  elements.rotateLeftButton.addEventListener("click", () => rotate(-90));
+  elements.rotateRightButton.addEventListener("click", () => rotate(90));
   elements.createButton.addEventListener("click", createOutputPdf);
   elements.printButton.addEventListener("click", openForPrint);
   elements.outputWidth.addEventListener("input", () => { updateCropMeta(); revokeGeneratedUrl(); });
   elements.outputHeight.addEventListener("input", () => { updateCropMeta(); revokeGeneratedUrl(); });
-  elements.rotate180.addEventListener("change", revokeGeneratedUrl);
   elements.preserveAspect.addEventListener("change", revokeGeneratedUrl);
 
   window.addEventListener("resize", () => {
