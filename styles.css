@@ -178,7 +178,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .tb-input:hover { border-color: var(--muted); }
 .tb-input:focus { outline: none; border-color: var(--fg); box-shadow: 0 0 0 2px var(--hover); }
-.tb-input[readonly] { border-color: transparent; background: transparent; cursor: default; }
+.tb-input[readonly] { width: 3.2em; padding: 0; border-color: transparent; background: transparent; text-align: center; cursor: default; }
 .tb-input[readonly]:hover, .tb-input[readonly]:focus { border-color: transparent; box-shadow: none; }
 .tb-input::-webkit-inner-spin-button, .tb-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
