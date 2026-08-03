@@ -16,7 +16,7 @@
 Appen guidar dig i tre steg:
 
 1. **Ladda upp** – välj eller släpp PDF-filen från Tradera (endast första sidan behandlas).
-2. **Rotera & markera** – vrid etiketten rätt med **⟲ / ⟳**, zooma med **− / +**, och dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken. Markeringens mått visas i verktygsraden.
+2. **Beskär** – vrid etiketten rätt med **⟲ / ⟳**, zooma med **− / +**, och dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken. Markeringens mått visas i verktygsraden.
 3. **Resultat** – granska den färdiga etiketten och klicka **Hämta**. Skriv ut i faktisk storlek (skala 100 %) på **104,4 × 187,8 mm**.
 
 ## Köra lokalt
