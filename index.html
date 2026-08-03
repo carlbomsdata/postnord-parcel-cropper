@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <title>Fraktsedelsklippare</title>
+  <title>Parcel Cropper</title>
   <meta name="description" content="Beskär PostNord-fraktsedeln till en 104,4 × 187,8 mm-etikett direkt i webbläsaren.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main>
     <header class="topbar">
-      <span class="brand">Fraktsedelsklippare</span>
+      <span class="brand">Parcel Cropper</span>
       <ol class="steps">
         <li data-step="1">Ladda upp</li>
         <li data-step="2">Rotera &amp; markera</li>
-        <li data-step="3">Ladda ner</li>
+        <li data-step="3">Resultat</li>
       </ol>
       <div class="nav">
         <button id="backButton" type="button" hidden>Tillbaka</button>
@@ -40,6 +40,7 @@
         <span class="sep"></span>
         <button id="resetButton" type="button" title="Återställ">Återställ</button>
       </div>
+      <div id="sizeBadge" class="size-badge" aria-hidden="true"></div>
       <div id="preview" class="viewport">
         <div id="pageStage" class="stage">
           <canvas id="pdfCanvas" aria-label="Förhandsvisning"></canvas>
@@ -65,9 +66,12 @@
       <div id="resultPreview" class="viewport result">
         <canvas id="resultCanvas" aria-label="Färdig etikett"></canvas>
       </div>
+      <div class="size-badge" aria-hidden="true">104,4 × 187,8 mm</div>
     </section>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <footer class="footer">© 2026 Carlboms Data · Allt sker lokalt i din webbläsare – inget laddas upp eller sparas.</footer>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

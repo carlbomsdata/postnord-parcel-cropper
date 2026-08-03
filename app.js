@@ -48,6 +48,7 @@
     zoomOutButton: document.getElementById("zoomOutButton"),
     backButton: document.getElementById("backButton"),
     nextButton: document.getElementById("nextButton"),
+    sizeBadge: document.getElementById("sizeBadge"),
     nav: document.querySelector(".nav")
   };
 
@@ -59,6 +60,8 @@
     pdfPage: null,
     stageWidth: 0,
     stageHeight: 0,
+    pageW: 0,
+    pageH: 0,
     baseRotation: 0,
     userRotation: 0,
     zoom: 1,
@@ -226,6 +229,8 @@
     try {
       const rotation = totalRotation();
       const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
+      state.pageW = scaleViewport.width;
+      state.pageH = scaleViewport.height;
 
       // Passa in i den lediga ytan (bredd + höjd) och multiplicera med zoom.
       const availableWidth = Math.max(240, el.preview.clientWidth - 28);
@@ -314,6 +319,16 @@
     Object.assign(el.shadeRight.style, {
       left: `${right}px`, top: `${rect.y}px`, width: `${Math.max(0, state.stageWidth - right)}px`, height: `${rect.height}px`
     });
+
+    updateSizeBadge();
+  }
+
+  function updateSizeBadge() {
+    if (!el.sizeBadge || !state.pageW || !state.pageH) return;
+    const f = n => n.toFixed(1).replace(".", ",");
+    const wMm = state.selection.width * state.pageW * 25.4 / 72;
+    const hMm = state.selection.height * state.pageH * 25.4 / 72;
+    el.sizeBadge.textContent = `${f(wMm)} × ${f(hMm)} mm`;
   }
 
   function resetSelection() {
@@ -487,9 +502,9 @@
       rotate: degrees(angle)
     });
 
-    outputPdf.setTitle("Beskuren fraktsedel");
-    outputPdf.setProducer("Fraktsedelsklippare - client-side");
-    outputPdf.setCreator("Fraktsedelsklippare");
+    outputPdf.setTitle("Parcel Cropper – etikett");
+    outputPdf.setProducer("Parcel Cropper");
+    outputPdf.setCreator("Parcel Cropper");
 
     return outputPdf.save({ useObjectStreams: false });
   }
