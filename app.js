@@ -16,8 +16,6 @@
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-  const OUTPUT_WIDTH_MM = 104.4;
-  const OUTPUT_HEIGHT_MM = 187.8;
   const MIN_SELECTION_PX = 30;
   const STEPS = 3;
 
@@ -66,8 +64,8 @@
     baseRotation: 0,
     userRotation: 0,
     zoom: 1,
-    outputW: OUTPUT_WIDTH_MM,
-    outputH: OUTPUT_HEIGHT_MM,
+    pageW: 0,
+    pageH: 0,
     selection: { ...PRESET },
     generatedUrl: null,
     resultDoc: null,
@@ -232,6 +230,8 @@
     try {
       const rotation = totalRotation();
       const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
+      state.pageW = scaleViewport.width;
+      state.pageH = scaleViewport.height;
 
       // Passa in i den lediga ytan (bredd + höjd) och multiplicera med zoom.
       const availableWidth = Math.max(240, el.preview.clientWidth - 28);
@@ -320,26 +320,42 @@
     Object.assign(el.shadeRight.style, {
       left: `${right}px`, top: `${rect.y}px`, width: `${Math.max(0, state.stageWidth - right)}px`, height: `${rect.height}px`
     });
+
+    updateSizeInputs();
   }
 
-  function syncSizeInputs() {
-    const set = (input, v) => { if (input && document.activeElement !== input) input.value = v; };
-    set(el.ow2, state.outputW); set(el.ow3, state.outputW);
-    set(el.oh2, state.outputH); set(el.oh3, state.outputH);
+  // Textrutorna visar markeringens (rektangelns) storlek i mm och uppdateras när
+  // rektangeln dras/roteras. Att skriva ett värde ändrar rektangelns storlek.
+  function updateSizeInputs() {
+    if (!state.pageW || !state.pageH) return;
+    const wMm = state.selection.width * state.pageW * 25.4 / 72;
+    const hMm = state.selection.height * state.pageH * 25.4 / 72;
+    const setV = (input, v) => { if (input && document.activeElement !== input) input.value = v.toFixed(1); };
+    setV(el.ow2, wMm); setV(el.ow3, wMm);
+    setV(el.oh2, hMm); setV(el.oh3, hMm);
   }
 
-  function onSizeInput(axis, input) {
+  function mirrorSizeInput(axis, input) {
+    const twins = axis === "w" ? [el.ow2, el.ow3] : [el.oh2, el.oh3];
+    twins.forEach(i => { if (i && i !== input) i.value = input.value; });
+  }
+
+  function commitSize(axis, input) {
+    if (!state.pageW || !state.pageH) return;
     const raw = parseFloat(String(input.value).replace(",", "."));
-    if (!Number.isFinite(raw) || raw <= 0) return;
-    if (axis === "w") state.outputW = raw; else state.outputH = raw;
-    const mirror = axis === "w" ? [el.ow2, el.ow3] : [el.oh2, el.oh3];
-    mirror.forEach(i => { if (i && i !== input) i.value = input.value; });
-  }
-
-  function onSizeChange() {
-    state.outputW = clamp(state.outputW, 20, 500);
-    state.outputH = clamp(state.outputH, 20, 1000);
-    syncSizeInputs();
+    if (Number.isFinite(raw) && raw > 0) {
+      if (axis === "w") {
+        const width = clamp(mmToPoints(raw) / state.pageW, 0.02, 1);
+        const x = clamp(state.selection.x, 0, 1 - width);
+        state.selection = { ...state.selection, x, width };
+      } else {
+        const height = clamp(mmToPoints(raw) / state.pageH, 0.02, 1);
+        const y = clamp(state.selection.y, 0, 1 - height);
+        state.selection = { ...state.selection, y, height };
+      }
+    }
+    updateSelectionUi();
+    revokeGeneratedUrl();
     if (state.step === 3) showResult();
   }
 
@@ -470,16 +486,15 @@
     const displayWidth = swapped ? embedHeight : embedWidth;
     const displayHeight = swapped ? embedWidth : embedHeight;
 
-    const outputWidth = mmToPoints(clamp(state.outputW, 20, 500));
-    const outputHeight = mmToPoints(clamp(state.outputH, 20, 1000));
+    // Utdata = markeringen i sin verkliga storlek (100 %, ingen skalning).
+    const outputWidth = displayWidth;
+    const outputHeight = displayHeight;
     const outputPage = outputPdf.addPage([outputWidth, outputHeight]);
 
-    // Centrera med bibehållna proportioner (ingen förvrängning av streckkoder).
-    const scale = Math.min(outputWidth / displayWidth, outputHeight / displayHeight);
-    const fitWidth = displayWidth * scale;
-    const fitHeight = displayHeight * scale;
-    const offsetX = (outputWidth - fitWidth) / 2;
-    const offsetY = (outputHeight - fitHeight) / 2;
+    const fitWidth = outputWidth;
+    const fitHeight = outputHeight;
+    const offsetX = 0;
+    const offsetY = 0;
 
     // Placera det källorienterade utsnittet roterat exakt som i förhandsvisningen.
     // pdf-lib roterar moturs för positiva grader.
@@ -605,8 +620,8 @@
 
   [["w", el.ow2], ["w", el.ow3], ["h", el.oh2], ["h", el.oh3]].forEach(([axis, input]) => {
     if (!input) return;
-    input.addEventListener("input", () => onSizeInput(axis, input));
-    input.addEventListener("change", onSizeChange);
+    input.addEventListener("input", () => mirrorSizeInput(axis, input));
+    input.addEventListener("change", () => commitSize(axis, input));
   });
 
   el.stepEls.forEach((li, index) => {
@@ -629,5 +644,4 @@
   window.addEventListener("beforeunload", revokeGeneratedUrl);
 
   renderStep();
-  syncSizeInputs();
 })();
