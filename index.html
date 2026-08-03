@@ -32,15 +32,25 @@
 
     <section id="panelEdit" class="panel" hidden>
       <div class="tools">
-        <button id="rotateLeftButton" class="icon" type="button" aria-label="Rotera vänster" title="Rotera vänster">⟲</button>
-        <button id="rotateRightButton" class="icon" type="button" aria-label="Rotera höger" title="Rotera höger">⟳</button>
+        <button id="rotateLeftButton" class="tb-btn" type="button" aria-label="Rotera vänster" title="Rotera vänster">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+        <button id="rotateRightButton" class="tb-btn" type="button" aria-label="Rotera höger" title="Rotera höger">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
         <span class="sep"></span>
-        <button id="zoomOutButton" class="icon" type="button" aria-label="Zooma ut" title="Zooma ut">−</button>
-        <button id="zoomInButton" class="icon" type="button" aria-label="Zooma in" title="Zooma in">+</button>
+        <button id="zoomOutButton" class="tb-btn" type="button" aria-label="Zooma ut" title="Zooma ut">−</button>
+        <button id="zoomInButton" class="tb-btn" type="button" aria-label="Zooma in" title="Zooma in">+</button>
         <span class="sep"></span>
-        <button id="resetButton" type="button" title="Återställ">Återställ</button>
+        <button id="resetButton" class="tb-btn tb-text" type="button" title="Återställ">Återställ</button>
+        <span class="tb-spacer"></span>
+        <span class="tb-size">
+          <input id="ow2" class="tb-input" type="number" min="20" max="500" step="0.1" aria-label="Bredd i mm">
+          <span class="tb-x">×</span>
+          <input id="oh2" class="tb-input" type="number" min="20" max="1000" step="0.1" aria-label="Höjd i mm">
+          <span class="tb-unit">mm</span>
+        </span>
       </div>
-      <div id="sizeBadge" class="size-badge" aria-hidden="true"></div>
       <div id="preview" class="viewport">
         <div id="pageStage" class="stage">
           <canvas id="pdfCanvas" aria-label="Förhandsvisning"></canvas>
@@ -63,10 +73,17 @@
     </section>
 
     <section id="panelDownload" class="panel" hidden>
+      <div class="tools">
+        <span class="tb-size">
+          <input id="ow3" class="tb-input" type="number" min="20" max="500" step="0.1" aria-label="Bredd i mm">
+          <span class="tb-x">×</span>
+          <input id="oh3" class="tb-input" type="number" min="20" max="1000" step="0.1" aria-label="Höjd i mm">
+          <span class="tb-unit">mm</span>
+        </span>
+      </div>
       <div id="resultPreview" class="viewport result">
         <canvas id="resultCanvas" aria-label="Färdig etikett"></canvas>
       </div>
-      <div class="size-badge" aria-hidden="true">104,4 × 187,8 mm</div>
     </section>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>

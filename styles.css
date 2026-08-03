@@ -92,8 +92,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Paneler fyller den lediga ytan */
 .panel { flex: 1; min-height: 0; }
 #panelUpload { flex: 0 0 auto; }
-#panelEdit { position: relative; display: flex; }
-#panelDownload { position: relative; display: flex; }
+#panelEdit, #panelDownload { display: flex; flex-direction: column; gap: 12px; }
 
 .drop {
   display: flex;
@@ -134,56 +133,49 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 #pdfCanvas { display: block; width: 100%; height: 100%; }
 #resultCanvas { display: block; margin: auto; box-shadow: 0 1px 12px rgba(0, 0, 0, 0.16); }
 
-/* Flytande verktygsrad över PDF:en */
+/* Verktygsrad ovanför PDF:en (som en PDF-visares toolbar) */
 .tools {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 6;
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 5px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
+  gap: 4px;
+  padding: 6px 10px;
   border: 1px solid var(--line);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  background: var(--panel);
 }
-.tools button {
-  display: flex;
+.tb-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 38px;
   min-height: 34px;
-  padding: 5px 9px;
+  padding: 4px 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-}
-.tools button:hover { background: var(--hover); border-color: transparent; }
-.tools .icon { min-width: 36px; font-size: 1.1rem; line-height: 1; }
-.tools #resetButton { font-size: 0.85rem; font-weight: 600; }
-.tools .sep { width: 1px; height: 20px; background: var(--line); margin: 0 3px; }
-
-.size-badge {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 6;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--line);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(6px);
   color: var(--fg);
-  font-size: 0.82rem;
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
+  font-size: 1.05rem;
 }
+.tb-btn:hover { background: var(--hover); }
+.tb-btn svg { display: block; }
+.tb-btn.tb-text { min-width: 0; font-size: 0.85rem; font-weight: 600; }
+.tools .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.tb-spacer { flex: 1; }
+.tb-size { display: inline-flex; align-items: center; gap: 5px; font-size: 0.85rem; color: var(--muted); }
+.tb-input {
+  width: 60px;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.tb-input::-webkit-inner-spin-button, .tb-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
 .footer { margin: 0; text-align: center; color: var(--muted); font-size: 0.76rem; }
 
@@ -243,6 +235,5 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     --accent-fg: #0d0d0d;
     --hover: rgba(255, 255, 255, 0.1);
   }
-  .tools, .size-badge { background: rgba(26, 26, 26, 0.92); }
   .stage, #resultCanvas { background: #ffffff; }
 }

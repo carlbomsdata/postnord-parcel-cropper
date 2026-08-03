@@ -1,6 +1,6 @@
 # postnord-parcel-cropper
 
-En minimalistisk, statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **104,4 × 187,8 mm**, redo för Zebra eller annan etikettskrivare.
+**Parcel Cropper** – en minimalistisk, statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **104,4 × 187,8 mm**, redo för Zebra eller annan etikettskrivare.
 
 **Live:** https://carlboms-data-ab.github.io/postnord-parcel-cropper/
 
@@ -16,8 +16,8 @@ En minimalistisk, statisk webbapp som beskär Traderas A4-fraktsedel från PostN
 Appen guidar dig i tre steg:
 
 1. **Ladda upp** – välj eller släpp PDF-filen från Tradera (endast första sidan behandlas).
-2. **Rotera & markera** – vrid etiketten rätt med **⟲ / ⟳** och dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken.
-3. **Ladda ner** – hämta etiketten och skriv ut i **100 % / faktisk storlek** på **104,4 × 187,8 mm** med ”Anpassa till sida” avstängt.
+2. **Rotera & markera** – vrid etiketten rätt med **⟲ / ⟳**, zooma med **− / +**, och dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken. Markeringens mått visas i verktygsraden.
+3. **Resultat** – granska den färdiga etiketten och klicka **Hämta**. Skriv ut i faktisk storlek (skala 100 %) på **104,4 × 187,8 mm**.
 
 ## Köra lokalt
 

@@ -48,7 +48,10 @@
     zoomOutButton: document.getElementById("zoomOutButton"),
     backButton: document.getElementById("backButton"),
     nextButton: document.getElementById("nextButton"),
-    sizeBadge: document.getElementById("sizeBadge"),
+    ow2: document.getElementById("ow2"),
+    oh2: document.getElementById("oh2"),
+    ow3: document.getElementById("ow3"),
+    oh3: document.getElementById("oh3"),
     nav: document.querySelector(".nav")
   };
 
@@ -60,11 +63,11 @@
     pdfPage: null,
     stageWidth: 0,
     stageHeight: 0,
-    pageW: 0,
-    pageH: 0,
     baseRotation: 0,
     userRotation: 0,
     zoom: 1,
+    outputW: OUTPUT_WIDTH_MM,
+    outputH: OUTPUT_HEIGHT_MM,
     selection: { ...PRESET },
     generatedUrl: null,
     resultDoc: null,
@@ -229,8 +232,6 @@
     try {
       const rotation = totalRotation();
       const scaleViewport = state.pdfPage.getViewport({ scale: 1, rotation });
-      state.pageW = scaleViewport.width;
-      state.pageH = scaleViewport.height;
 
       // Passa in i den lediga ytan (bredd + höjd) och multiplicera med zoom.
       const availableWidth = Math.max(240, el.preview.clientWidth - 28);
@@ -319,16 +320,27 @@
     Object.assign(el.shadeRight.style, {
       left: `${right}px`, top: `${rect.y}px`, width: `${Math.max(0, state.stageWidth - right)}px`, height: `${rect.height}px`
     });
-
-    updateSizeBadge();
   }
 
-  function updateSizeBadge() {
-    if (!el.sizeBadge || !state.pageW || !state.pageH) return;
-    const f = n => n.toFixed(1).replace(".", ",");
-    const wMm = state.selection.width * state.pageW * 25.4 / 72;
-    const hMm = state.selection.height * state.pageH * 25.4 / 72;
-    el.sizeBadge.textContent = `${f(wMm)} × ${f(hMm)} mm`;
+  function syncSizeInputs() {
+    const set = (input, v) => { if (input && document.activeElement !== input) input.value = v; };
+    set(el.ow2, state.outputW); set(el.ow3, state.outputW);
+    set(el.oh2, state.outputH); set(el.oh3, state.outputH);
+  }
+
+  function onSizeInput(axis, input) {
+    const raw = parseFloat(String(input.value).replace(",", "."));
+    if (!Number.isFinite(raw) || raw <= 0) return;
+    if (axis === "w") state.outputW = raw; else state.outputH = raw;
+    const mirror = axis === "w" ? [el.ow2, el.ow3] : [el.oh2, el.oh3];
+    mirror.forEach(i => { if (i && i !== input) i.value = input.value; });
+  }
+
+  function onSizeChange() {
+    state.outputW = clamp(state.outputW, 20, 500);
+    state.outputH = clamp(state.outputH, 20, 1000);
+    syncSizeInputs();
+    if (state.step === 3) showResult();
   }
 
   function resetSelection() {
@@ -458,8 +470,8 @@
     const displayWidth = swapped ? embedHeight : embedWidth;
     const displayHeight = swapped ? embedWidth : embedHeight;
 
-    const outputWidth = mmToPoints(OUTPUT_WIDTH_MM);
-    const outputHeight = mmToPoints(OUTPUT_HEIGHT_MM);
+    const outputWidth = mmToPoints(clamp(state.outputW, 20, 500));
+    const outputHeight = mmToPoints(clamp(state.outputH, 20, 1000));
     const outputPage = outputPdf.addPage([outputWidth, outputHeight]);
 
     // Centrera med bibehållna proportioner (ingen förvrängning av streckkoder).
@@ -591,6 +603,12 @@
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", primaryAction);
 
+  [["w", el.ow2], ["w", el.ow3], ["h", el.oh2], ["h", el.oh3]].forEach(([axis, input]) => {
+    if (!input) return;
+    input.addEventListener("input", () => onSizeInput(axis, input));
+    input.addEventListener("change", onSizeChange);
+  });
+
   el.stepEls.forEach((li, index) => {
     const target = index + 1;
     const activate = () => { if (target === 1 || state.pdfPage) goToStep(target); };
@@ -611,4 +629,5 @@
   window.addEventListener("beforeunload", revokeGeneratedUrl);
 
   renderStep();
+  syncSizeInputs();
 })();
