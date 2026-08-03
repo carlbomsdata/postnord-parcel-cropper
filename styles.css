@@ -69,16 +69,17 @@ main {
 .steps li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 .nav { justify-self: end; display: flex; gap: 8px; }
-.nav button { min-width: 120px; }
+.nav button { min-width: 90px; }
 
 /* Knappar */
 button {
   font: inherit;
+  font-size: 0.85rem;
   cursor: pointer;
-  min-height: 40px;
-  padding: 8px 15px;
+  min-height: 34px;
+  padding: 7px 13px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--bg);
   color: var(--fg);
   transition: background 120ms ease, border-color 120ms ease, transform 70ms ease;
@@ -179,6 +180,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .tb-input:hover { border-color: var(--muted); }
 .tb-input:focus { outline: none; border-color: var(--fg); box-shadow: 0 0 0 2px var(--hover); }
+.tb-input[readonly] { border-color: transparent; background: transparent; cursor: default; }
+.tb-input[readonly]:hover, .tb-input[readonly]:focus { border-color: transparent; box-shadow: none; }
 .tb-input::-webkit-inner-spin-button, .tb-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
 .footer { margin: 0; text-align: center; color: var(--muted); font-size: 0.76rem; }
@@ -224,7 +227,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   main { padding: 12px 14px 14px; }
   .brand { display: none; }
   .steps { font-size: 0.72rem; gap: 4px 8px; }
-  .nav button { min-width: 96px; }
+  .nav button { min-width: 82px; }
   .viewport { padding: 8px; }
 }
 

@@ -19,8 +19,19 @@
   const MIN_SELECTION_PX = 30;
   const STEPS = 3;
 
-  // Beskärningsområdet innanför klippstrecken i den aktuella Tradera/PostNord-mallen.
-  const PRESET = Object.freeze({ x: 0.020168, y: 0.140736, width: 0.469332, height: 0.624822 });
+  // Standardetiketten för den aktuella Tradera/PostNord-mallen: storlek i mm och
+  // mittpunkt (andel av sidan). Markeringen räknas ut från sidans verkliga mått.
+  const DEFAULT_W_MM = 103.8;
+  const DEFAULT_H_MM = 188.1;
+  const LABEL_CENTER = Object.freeze({ x: 0.254834, y: 0.453147 });
+
+  function defaultSelectionForPage(pageWidthPt, pageHeightPt) {
+    const width = clamp(mmToPoints(DEFAULT_W_MM) / pageWidthPt, 0.02, 1);
+    const height = clamp(mmToPoints(DEFAULT_H_MM) / pageHeightPt, 0.02, 1);
+    const x = clamp(LABEL_CENTER.x - width / 2, 0, 1 - width);
+    const y = clamp(LABEL_CENTER.y - height / 2, 0, 1 - height);
+    return { x, y, width, height };
+  }
 
   const el = {
     fileInput: document.getElementById("fileInput"),
@@ -66,7 +77,7 @@
     zoom: 1,
     pageW: 0,
     pageH: 0,
-    selection: { ...PRESET },
+    selection: { x: 0.1, y: 0.1, width: 0.5, height: 0.6 },
     generatedUrl: null,
     resultDoc: null,
     pointerSession: null,
@@ -94,7 +105,8 @@
 
   // Presetrutan uttryckt i den aktuella rotationens visningsram.
   function presetForCurrentRotation() {
-    let s = { ...PRESET };
+    const vp = state.pdfPage.getViewport({ scale: 1, rotation: state.baseRotation });
+    let s = defaultSelectionForPage(vp.width, vp.height);
     const turns = normalizeAngle(state.userRotation) / 90;
     for (let i = 0; i < turns; i++) s = rotateSelectionCW(s);
     return s;
@@ -210,7 +222,8 @@
       state.baseRotation = normalizeAngle(pdfPage.rotate || 0);
       state.userRotation = 0;
       state.zoom = 1;
-      state.selection = { ...PRESET };
+      const vp = pdfPage.getViewport({ scale: 1, rotation: state.baseRotation });
+      state.selection = defaultSelectionForPage(vp.width, vp.height);
 
       goToStep(2);
     } catch (error) {
@@ -618,7 +631,9 @@
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", primaryAction);
 
-  [["w", el.ow2], ["w", el.ow3], ["h", el.oh2], ["h", el.oh3]].forEach(([axis, input]) => {
+  // Endast steg 2-fälten är redigerbara. Steg 3-fälten är read-only (visar
+  // den färdiga PDF:ens storlek).
+  [["w", el.ow2], ["h", el.oh2]].forEach(([axis, input]) => {
     if (!input) return;
     input.addEventListener("input", () => mirrorSizeInput(axis, input));
     input.addEventListener("change", () => commitSize(axis, input));
