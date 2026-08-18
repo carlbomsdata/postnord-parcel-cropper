@@ -9,7 +9,7 @@
   }
 
   if (typeof pdfjsLib === "undefined" || typeof PDFLib === "undefined") {
-    setStatus("Kunde inte ladda nödvändiga bibliotek. Kontrollera internet och ladda om sidan.", "error");
+    setStatus("Could not load required libraries. Check your connection and reload the page.", "error");
     return;
   }
 
@@ -19,8 +19,8 @@
   const MIN_SELECTION_PX = 30;
   const STEPS = 3;
 
-  // Standardetiketten för den aktuella Tradera/PostNord-mallen: storlek i mm och
-  // mittpunkt (andel av sidan). Markeringen räknas ut från sidans verkliga mått.
+  // Default label for the current Tradera/PostNord template: size in mm and
+  // center point (fraction of the page). The selection is computed from the actual page size.
   const DEFAULT_W_MM = 103.8;
   const DEFAULT_H_MM = 188.1;
   const LABEL_CENTER = Object.freeze({ x: 0.254834, y: 0.453147 });
@@ -94,7 +94,7 @@
     return normalizeAngle(state.baseRotation + state.userRotation);
   }
 
-  // Rotera en normaliserad markering (y nedåt) tillsammans med innehållet.
+  // Rotate a normalized selection (y down) together with the content.
   function rotateSelectionCW(s) {
     return { x: 1 - s.y - s.height, y: s.x, width: s.height, height: s.width };
   }
@@ -112,8 +112,8 @@
     return s;
   }
 
-  // Mappa en punkt i den visade (roterade) bilden till källsidans normaliserade
-  // koordinater (u = vänster→höger, v = topp→botten).
+  // Map a point in the displayed (rotated) image to the source page's normalized
+  // coordinates (u = left→right, v = top→bottom).
   function mapDisplayToSource(nx, ny, angle) {
     switch (angle) {
       case 90: return { u: ny, v: 1 - nx };
@@ -175,7 +175,7 @@
     el.backButton.hidden = s === 1;
     el.backButton.textContent = "Tillbaka";
     el.nextButton.hidden = !((s === 1 && state.pdfPage) || s === 2 || s === 3);
-    el.nextButton.textContent = s === 1 ? "Fortsätt" : s === 3 ? "Hämta" : "Nästa";
+    el.nextButton.textContent = s === 1 ? "Continue" : s === 3 ? "Download" : "Next";
     el.nav.hidden = el.backButton.hidden && el.nextButton.hidden;
 
     setStatus("");
@@ -196,15 +196,15 @@
     else goNext();
   }
 
-  // --- Inläsning & rendering -------------------------------------------------
+  // --- Loading & rendering ---------------------------------------------------
 
   async function loadFile(file) {
     if (!file || (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"))) {
-      setStatus("Välj en PDF-fil.", "error");
+      setStatus("Choose a PDF file.", "error");
       return;
     }
 
-    setStatus("Läser PDF…");
+    setStatus("Reading PDF…");
 
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -228,7 +228,7 @@
       goToStep(2);
     } catch (error) {
       console.error(error);
-      setStatus("PDF-filen kunde inte läsas. Kontrollera att den inte är lösenordsskyddad.", "error");
+      setStatus("The PDF could not be read. Make sure it is not password-protected.", "error");
     }
   }
 
@@ -246,7 +246,7 @@
       state.pageW = scaleViewport.width;
       state.pageH = scaleViewport.height;
 
-      // Passa in i den lediga ytan (bredd + höjd) och multiplicera med zoom.
+      // Fit into the available area (width + height) and multiply by zoom.
       const availableWidth = Math.max(240, el.preview.clientWidth - 28);
       const availableHeight = Math.max(240, el.preview.clientHeight - 28);
       const fitScale = Math.min(availableWidth / scaleViewport.width, availableHeight / scaleViewport.height);
@@ -337,8 +337,8 @@
     updateSizeInputs();
   }
 
-  // Textrutorna visar markeringens (rektangelns) storlek i mm och uppdateras när
-  // rektangeln dras/roteras. Att skriva ett värde ändrar rektangelns storlek.
+  // The text fields show the selection rectangle's size in mm and update as
+  // the rectangle is dragged/rotated. Typing a value resizes the rectangle.
   function updateSizeInputs() {
     if (!state.pageW || !state.pageH) return;
     const wMm = state.selection.width * state.pageW * 25.4 / 72;
@@ -472,8 +472,8 @@
     const sourceWidth = sourcePage.getWidth();
     const sourceHeight = sourcePage.getHeight();
 
-    // Mappa markeringen (i den visade, roterade bilden) tillbaka till källsidans
-    // oroterade koordinatrum, så att beskärningen blir rätt oavsett rotation.
+    // Map the selection (in the displayed, rotated image) back to the source page's
+    // unrotated coordinate space, so the crop is correct regardless of rotation.
     const rotation = totalRotation();
     const sel = state.selection;
     const corners = [
@@ -509,8 +509,8 @@
     const offsetX = 0;
     const offsetY = 0;
 
-    // Placera det källorienterade utsnittet roterat exakt som i förhandsvisningen.
-    // pdf-lib roterar moturs för positiva grader.
+    // Place the source-oriented cutout rotated exactly as in the preview.
+    // pdf-lib rotates counter-clockwise for positive degrees.
     let drawWidth;
     let drawHeight;
     let drawX;
@@ -549,7 +549,7 @@
     return outputPdf.save({ useObjectStreams: false });
   }
 
-  // Steg 3: bygg den färdiga etiketten och visa den riktiga utdata-PDF:en.
+  // Step 3: build the final label and show the actual output PDF.
   async function showResult() {
     if (!state.sourceBytes) return;
     setStatus("Skapar etikett…");
@@ -561,7 +561,7 @@
       setStatus("");
     } catch (error) {
       console.error(error);
-      setStatus("Kunde inte skapa etiketten. Gå tillbaka och försök igen.", "error");
+      setStatus("Could not create the label. Go back and try again.", "error");
     }
   }
 
@@ -603,7 +603,7 @@
     setStatus("Etikett nedladdad.", "success");
   }
 
-  // --- Händelser -------------------------------------------------------------
+  // --- Events ----------------------------------------------------------------
 
   el.fileInput.addEventListener("change", () => loadFile(el.fileInput.files[0]));
   el.dropZone.addEventListener("dragover", event => {
@@ -631,8 +631,8 @@
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", primaryAction);
 
-  // Endast steg 2-fälten är redigerbara. Steg 3-fälten är read-only (visar
-  // den färdiga PDF:ens storlek).
+  // Only the step 2 fields are editable. The step 3 fields are read-only (they show
+  // the final PDF's size).
   [["w", el.ow2], ["h", el.oh2]].forEach(([axis, input]) => {
     if (!input) return;
     input.addEventListener("input", () => mirrorSizeInput(axis, input));

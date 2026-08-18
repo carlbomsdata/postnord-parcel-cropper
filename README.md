@@ -1,45 +1,45 @@
 # postnord-parcel-cropper
 
-**Parcel Cropper** – en minimalistisk, statisk webbapp som beskär Traderas A4-fraktsedel från PostNord till en ren etikett på **104,4 × 187,8 mm**, redo för Zebra eller annan etikettskrivare.
+**Parcel Cropper** – a minimalist, static web app that crops Tradera's A4 PostNord shipping label down to a clean **104.4 × 187.8 mm** label, ready for a Zebra or any other label printer.
 
 **Live:** https://carlboms-data-ab.github.io/postnord-parcel-cropper/
 
-## Funktioner
+## Features
 
-- All behandling sker lokalt i webbläsaren – PDF:en laddas aldrig upp till någon server.
-- Text och streckkoder behålls som vektor-PDF via `pdf-lib` (görs inte om till en skärmbild).
-- Enkel steg-för-steg-guide. Det du ser i förhandsvisningen är det som exporteras.
-- Markeringen startar på beskärningsområdet för den aktuella Tradera/PostNord-mallen.
+- All processing happens locally in your browser – the PDF is never uploaded to any server.
+- Text and barcodes are kept as vector PDF via `pdf-lib` (not rasterized to a screenshot).
+- Simple step-by-step guide. What you see in the preview is what gets exported.
+- The selection starts on the crop area for the current Tradera/PostNord template.
 
-## Användning
+## Usage
 
-Appen guidar dig i tre steg:
+The app guides you through three steps:
 
-1. **Ladda upp** – välj eller släpp PDF-filen från Tradera (endast första sidan behandlas).
-2. **Beskär** – vrid etiketten rätt med **⟲ / ⟳**, zooma med **− / +**, och dra den blå rutan (eller handtagen / piltangenterna) innanför de prickade klippstrecken. Markeringens mått visas i verktygsraden.
-3. **Resultat** – granska den färdiga etiketten och klicka **Hämta**. Skriv ut i faktisk storlek (skala 100 %) på **104,4 × 187,8 mm**.
+1. **Upload** – choose or drop the PDF file from Tradera (only the first page is processed).
+2. **Crop** – rotate the label with **⟲ / ⟳**, zoom with **− / +**, and drag the blue box (or the handles / arrow keys) inside the dashed crop marks. The selection size is shown in the toolbar.
+3. **Result** – review the finished label and click **Download**. Print at actual size (100 % scale) on **104.4 × 187.8 mm**.
 
-## Köra lokalt
+## Run locally
 
-Servera mappen med valfri statisk server, t.ex.:
+Serve the folder with any static server, e.g.:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Öppna sedan `http://localhost:8000/`.
+Then open `http://localhost:8000/`.
 
-## Publicera med GitHub Pages
+## Publish with GitHub Pages
 
-Aktiverat via **Settings → Pages → Deploy from a branch** (`main` / `/root`).
+Enabled via **Settings → Pages → Deploy from a branch** (`main` / `/root`).
 
-## Externa bibliotek
+## External libraries
 
-Laddas från CDN och körs i webbläsaren – PDF:en skickas aldrig till dessa tjänster:
+Loaded from CDN and run in the browser – the PDF is never sent to these services:
 
 - PDF.js 3.11.174
 - pdf-lib 1.17.1
 
-## Licens
+## License
 
-GPL-3.0 – se [LICENSE](LICENSE).
+GPL-3.0 – see [LICENSE](LICENSE).
