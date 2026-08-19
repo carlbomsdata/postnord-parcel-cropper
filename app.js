@@ -628,6 +628,8 @@
   el.zoomInButton.addEventListener("click", () => applyZoom(1.25));
   el.zoomOutButton.addEventListener("click", () => applyZoom(0.8));
   el.resetButton.addEventListener("click", resetSelection);
+  const brandEl = document.getElementById("brand");
+  if (brandEl) brandEl.addEventListener("click", () => goToStep(1));
   el.backButton.addEventListener("click", goBack);
   el.nextButton.addEventListener("click", primaryAction);
 
