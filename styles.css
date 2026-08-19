@@ -21,6 +21,9 @@ body { margin: 0; background: var(--bg); color: var(--fg); }
 main {
   height: 100vh;
   height: 100dvh;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
