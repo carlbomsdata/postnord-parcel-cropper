@@ -4,7 +4,7 @@ Cuts the shipping label out of a Tradera/PostNord A4 PDF and saves it at
 104.4 × 187.8 mm, real size, for a label printer. Runs in the browser; the PDF
 is never uploaded.
 
-**Live:** <https://carlboms-data-ab.github.io/postnord-parcel-cropper/>
+**Live:** <https://carlbomsdata.github.io/postnord-parcel-cropper/>
 
 The label stays vector — cropped with pdf-lib, not screenshotted — so the text
 and barcode stay sharp.
