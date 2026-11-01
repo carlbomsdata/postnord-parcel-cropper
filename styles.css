@@ -141,6 +141,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Toolbar above the PDF (like a PDF viewer's toolbar) */
 .tools {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 2px;
@@ -186,6 +187,35 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .tb-input[readonly]:hover, .tb-input[readonly]:focus { border-color: transparent; box-shadow: none; }
 .tb-input::-webkit-inner-spin-button, .tb-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
+select {
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+select:focus-visible, input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.photo-tools, .export-tools label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+.photo-tools { justify-content: center; gap: 8px 16px; }
+.photo-tools label { display: inline-flex; align-items: center; gap: 6px; }
+.photo-hint, .print-hint { color: var(--muted); font-size: 0.78rem; }
+.print-hint { margin: 0; text-align: center; }
+.export-tools { gap: 8px 16px; }
+.checkbox-label { white-space: nowrap; }
+.checkbox-label input { margin: 0; accent-color: var(--blue); }
+.checkbox-label:has(input:disabled) { color: var(--muted); }
+
 .footer { margin: 0; text-align: center; color: var(--muted); font-size: 0.76rem; }
 
 /* Cropping */
@@ -227,8 +257,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 @media (max-width: 600px) {
   main { padding: 12px 14px 14px; }
+  .topbar { grid-template-columns: 1fr; gap: 10px; }
   .brand { display: none; }
-  .steps { font-size: 0.72rem; gap: 4px 8px; }
+  .steps { justify-self: center; font-size: 0.72rem; gap: 4px 8px; }
+  .nav { justify-self: center; }
   .nav button { min-width: 82px; }
   .viewport { padding: 8px; }
 }

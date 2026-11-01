@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
   <title>Parcel Cropper</title>
-  <meta name="description" content="Crop the PostNord shipping label to a 104.4 × 187.8 mm label directly in your browser.">
-  <link rel="stylesheet" href="styles.css?v=1785747701">
+  <meta name="description" content="Crop PDF shipping labels or prepare photos at an exact print size, directly in your browser.">
+  <link rel="stylesheet" href="styles.css?v=photo-print-1">
 </head>
 <body>
   <main>
@@ -25,8 +25,8 @@
 
     <section id="panelUpload" class="panel">
       <label id="dropZone" class="drop" for="fileInput">
-        <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden>
-        <span>Choose or drop a PDF shipping label</span>
+        <input id="fileInput" type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" hidden>
+        <span>Choose or drop a PDF, JPG or PNG</span>
       </label>
     </section>
 
@@ -57,6 +57,16 @@
           <span class="tb-unit">mm</span>
         </span>
       </div>
+      <div id="photoTools" class="photo-tools" hidden>
+        <button id="cardPreset" type="button">Pokémon card · 63 × 88 mm</button>
+        <label>Photo fit
+          <select id="photoFit">
+            <option value="cover">Crop to fill</option>
+            <option value="contain">Fit whole photo</option>
+          </select>
+        </label>
+        <span class="photo-hint">The size above is the finished print size.</span>
+      </div>
       <div id="preview" class="viewport">
         <div id="pageStage" class="stage">
           <canvas id="pdfCanvas" aria-label="Preview"></canvas>
@@ -79,17 +89,28 @@
     </section>
 
     <section id="panelDownload" class="panel" hidden>
-      <div class="tools">
+      <div class="tools export-tools">
         <span class="tb-size">
           <input id="ow3" class="tb-input" type="number" readonly tabindex="-1" aria-label="Width in mm">
           <span class="tb-x">×</span>
           <input id="oh3" class="tb-input" type="number" readonly tabindex="-1" aria-label="Height in mm">
           <span class="tb-unit">mm</span>
         </span>
+        <label>Paper
+          <select id="paperSize">
+            <option value="crop">Sized PDF</option>
+            <option value="a4">A4</option>
+          </select>
+        </label>
+        <label class="checkbox-label">
+          <input id="cropMarks" type="checkbox" disabled>
+          Crop marks
+        </label>
       </div>
       <div id="resultPreview" class="viewport result">
         <canvas id="resultCanvas" aria-label="Finished label"></canvas>
       </div>
+      <p class="print-hint">Print at 100% / Actual size. Turn off Fit to page.</p>
     </section>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>
@@ -99,6 +120,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="app.js?v=1785747700"></script>
+  <script src="print-helpers.js?v=photo-print-1"></script>
+  <script src="app.js?v=photo-print-1"></script>
 </body>
 </html>
