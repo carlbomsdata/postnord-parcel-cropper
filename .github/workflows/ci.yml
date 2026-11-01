@@ -17,12 +17,17 @@ jobs:
           node-version: "20"
 
       - name: Syntax-check app.js
-        run: node --check app.js
+        run: |
+          node --check app.js
+          node --check print-helpers.js
+
+      - name: Test print sizes and crop geometry
+        run: node --test tests/*.test.js
 
       - name: Verify required files exist
         run: |
           missing=0
-          for f in index.html styles.css app.js .nojekyll LICENSE README.md; do
+          for f in index.html styles.css app.js print-helpers.js .nojekyll LICENSE README.md; do
             if [ ! -f "$f" ]; then
               echo "::error::Missing required file: $f"
               missing=1
